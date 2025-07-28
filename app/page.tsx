@@ -1,9 +1,20 @@
+"use client"
+
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import { useState } from "react"
+import { Switch } from "@/components/ui/switch" // Import the Switch component
+import { Label } from "@/components/ui/label" // Import Label for accessibility with Switch
 
 export default function LandingPage() {
+  const [showFullChart, setShowFullChart] = useState(false)
+
+  const toggleChart = () => {
+    setShowFullChart(!showFullChart)
+  }
+
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
@@ -43,10 +54,11 @@ export default function LandingPage() {
               <h1 className="text-5xl lg:text-6xl font-bold text-blue-600 leading-tight mb-6">FOMO Insurance</h1>
               <h2 className="text-2xl lg:text-3xl text-gray-700 mb-8 font-medium">Cash out without missing out</h2>
               <p className="text-lg text-gray-600 mb-10 leading-relaxed max-w-lg">
-                FOMO Insurance lets you cash out your crypto while keeping a share of the upside if the market rallies later.
+                FOMO Insurance lets you cash out your crypto while keeping a share of the upside if the market rallies
+                later.
                 <br />
                 <br />
-                 Get instant liquidity now, and peace of mind that you won't be missing out on the next big market rally.
+                Get instant liquidity now, and peace of mind that you won't be missing out on the next big market rally.
               </p>
               <Link href="/app">
                 <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg font-medium rounded-lg transition-colors">
@@ -54,17 +66,28 @@ export default function LandingPage() {
                 </Button>
               </Link>
             </div>
-            <div className="relative">
-              <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl p-8 h-96 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-24 h-24 bg-blue-600 rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center">
-                      <div className="w-6 h-6 bg-blue-600 rounded-full"></div>
-                    </div>
-                  </div>
-                  <p className="text-gray-600 font-medium">Secure • Transparent • Decentralized</p>
-                </div>
+            <div className="relative flex flex-col items-center">
+              {/* Image displayed with styling */}
+              <Image
+                src={showFullChart ? "/images/full_eth.png" : "/images/half_eth.png"}
+                alt="ETH Price Chart"
+                width={960} // Explicit width for Next.js Image component
+                height={720} // Explicit height for Next.js Image component
+                className="max-w-full h-auto rounded-xl shadow-lg border border-gray-200 overflow-hidden"
+                priority // Prioritize loading for LCP
+              />
+              {/* Toggle switch */}
+              <div className="flex items-center space-x-2 mt-4">
+                <Switch id="chart-toggle" checked={showFullChart} onCheckedChange={setShowFullChart} />
+                <Label htmlFor="chart-toggle" className="text-gray-700">
+                  Reveal full chart
+                </Label>
               </div>
+              {/* Caption */}
+              <p className="text-base text-gray-600 text-center mt-6 max-w-lg mx-auto">
+                You think you’ve sold the top but the market has other plans. FOMO Insurance protects you when the
+                market jumps right after you sell.
+              </p>
             </div>
           </div>
         </div>
@@ -94,7 +117,8 @@ export default function LandingPage() {
                   <div>
                     <h3 className="text-xl font-semibold text-gray-900 mb-3">Set your terms</h3>
                     <p className="text-gray-600 leading-relaxed">
-                      Choose your upfront payout %, coverage duration, and upside share % depending on your market outlook and risk tolerance.
+                      Choose your upfront payout %, coverage duration, and upside share % depending on your market
+                      outlook and risk tolerance.
                     </p>
                   </div>
                 </div>
@@ -108,7 +132,7 @@ export default function LandingPage() {
                   <div>
                     <h3 className="text-xl font-semibold text-gray-900 mb-3">Get liquidity</h3>
                     <p className="text-gray-600 leading-relaxed">
-                      Upon a buyer acceping your terms, instantly receive stablecoins which you can off ramp. 
+                      Upon a buyer acceping your terms, instantly receive stablecoins which you can off ramp.
                     </p>
                   </div>
                 </div>
@@ -122,7 +146,8 @@ export default function LandingPage() {
                   <div>
                     <h3 className="text-xl font-semibold text-gray-900 mb-3">Stay covered</h3>
                     <p className="text-gray-600 leading-relaxed">
-                      If the market rises, you'll receive a share of the upside. If the market crashes, you'll be glad you already cashed out.
+                      If the market rises, you'll receive a share of the upside. If the market crashes, you'll be glad
+                      you already cashed out.
                     </p>
                   </div>
                 </div>
@@ -258,8 +283,8 @@ export default function LandingPage() {
                 What tokens are supported?
               </AccordionTrigger>
               <AccordionContent className="text-gray-600 leading-relaxed">
-                We currently support ETH, BTC, and select ERC-20 tokens. Our supported
-                token list is continuously expanding based on liquidity and community demand.
+                We currently support ETH, BTC, and select ERC-20 tokens. Our supported token list is continuously
+                expanding based on liquidity and community demand.
               </AccordionContent>
             </AccordionItem>
 
@@ -268,8 +293,9 @@ export default function LandingPage() {
                 What happens at expiry?
               </AccordionTrigger>
               <AccordionContent className="text-gray-600 leading-relaxed">
-                At expiry, your policy automatically settles based on the token's performance. If the price increased, you'll receive your share of the upside in addition to the initial payout you
-                received when creating the policy.
+                At expiry, your policy automatically settles based on the token's performance. If the price increased,
+                you'll receive your share of the upside in addition to the initial payout you received when creating the
+                policy.
               </AccordionContent>
             </AccordionItem>
 
@@ -278,7 +304,8 @@ export default function LandingPage() {
                 Can I cancel a policy after listing it?
               </AccordionTrigger>
               <AccordionContent className="text-gray-600 leading-relaxed">
-                Yes. Policies can be cancelled at any time before a buyer accepts. Once a buyer purchases the policy, it becomes locked and cannot be cancelled.
+                Yes. Policies can be cancelled at any time before a buyer accepts. Once a buyer purchases the policy, it
+                becomes locked and cannot be cancelled.
               </AccordionContent>
             </AccordionItem>
 
@@ -287,7 +314,8 @@ export default function LandingPage() {
                 How is the upside share calculated?
               </AccordionTrigger>
               <AccordionContent className="text-gray-600 leading-relaxed">
-                The upside share is based on the token price at expiry compared to the price when the buyer purchased the policy. Any gains are split according to the agreed upside share.
+                The upside share is based on the token price at expiry compared to the price when the buyer purchased
+                the policy. Any gains are split according to the agreed upside share.
               </AccordionContent>
             </AccordionItem>
 
@@ -296,8 +324,9 @@ export default function LandingPage() {
                 What if the price doesn't go up?
               </AccordionTrigger>
               <AccordionContent className="text-gray-600 leading-relaxed">
-                If the market falls over the duration of the policy, you won't be eligible for any upside payment.
-                You keep the full initial payout. This means you successfully sold at a good time compared to if you had HODL.
+                If the market falls over the duration of the policy, you won't be eligible for any upside payment. You
+                keep the full initial payout. This means you successfully sold at a good time compared to if you had
+                HODL.
               </AccordionContent>
             </AccordionItem>
 
@@ -306,12 +335,11 @@ export default function LandingPage() {
                 Is my crypto safe while it's locked?
               </AccordionTrigger>
               <AccordionContent className="text-gray-600 leading-relaxed">
-                Your crypto remains in your wallet until a buyer purchases your policy. Once purchased, it's securely locked in a smart contract until the policy expires.
+                Your crypto remains in your wallet until a buyer purchases your policy. Once purchased, it's securely
+                locked in a smart contract until the policy expires.
               </AccordionContent>
             </AccordionItem>
           </Accordion>
-
-
         </div>
       </section>
 
