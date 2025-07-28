@@ -43,8 +43,10 @@ export default function LandingPage() {
               <h1 className="text-5xl lg:text-6xl font-bold text-blue-600 leading-tight mb-6">FOMO Insurance</h1>
               <h2 className="text-2xl lg:text-3xl text-gray-700 mb-8 font-medium">Cash out without missing out</h2>
               <p className="text-lg text-gray-600 mb-10 leading-relaxed max-w-lg">
-                FOMO Insurance lets you sell your crypto while keeping a share of the upside if it rallies later. You
-                get liquidity now, and peace of mind for what comes next.
+                FOMO Insurance lets you cash out your crypto while keeping a share of the upside if the market rallies later.
+                <br />
+                <br />
+                 Get instant liquidity now, and peace of mind that you won't be missing out on the next big market rally.
               </p>
               <Link href="/app">
                 <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg font-medium rounded-lg transition-colors">
@@ -71,7 +73,7 @@ export default function LandingPage() {
       {/* How It Works Section - Seller Flow */}
       <section id="how-it-works" className="py-24">
         <div className="max-w-8xl mx-auto px-8 sm:px-12 lg:px-32">
-          <h2 className="text-4xl font-bold text-gray-900 text-center mb-16">How It Works</h2>
+          <h2 className="text-4xl font-bold text-gray-900 text-center mb-16">Cash out in 3 steps</h2>
 
           <div className="flex flex-col lg:flex-row gap-12 items-center">
             <div className="flex-shrink-0">
@@ -92,8 +94,7 @@ export default function LandingPage() {
                   <div>
                     <h3 className="text-xl font-semibold text-gray-900 mb-3">Set your terms</h3>
                     <p className="text-gray-600 leading-relaxed">
-                      Choose your haircut, duration, and upside share. Customize the policy to match your risk tolerance
-                      and market outlook.
+                      Choose your upfront payout %, coverage duration, and upside share % depending on your market outlook and risk tolerance.
                     </p>
                   </div>
                 </div>
@@ -107,8 +108,7 @@ export default function LandingPage() {
                   <div>
                     <h3 className="text-xl font-semibold text-gray-900 mb-3">Get liquidity</h3>
                     <p className="text-gray-600 leading-relaxed">
-                      Instantly receive stablecoins via a gasless swap. Your crypto is converted to USDC while your
-                      policy is activated.
+                      Upon a buyer acceping your terms, instantly receive stablecoins which you can off ramp. 
                     </p>
                   </div>
                 </div>
@@ -122,8 +122,7 @@ export default function LandingPage() {
                   <div>
                     <h3 className="text-xl font-semibold text-gray-900 mb-3">Stay covered</h3>
                     <p className="text-gray-600 leading-relaxed">
-                      If the price goes up, you'll still receive a piece of the rally. Your policy automatically settles
-                      at expiry based on performance.
+                      If the market rises, you'll receive a share of the upside. If the market crashes, you'll be glad you already cashed out.
                     </p>
                   </div>
                 </div>
@@ -137,7 +136,7 @@ export default function LandingPage() {
       <section className="py-24 bg-gray-50">
         <div className="max-w-8xl mx-auto px-8 sm:px-12 lg:px-32">
           <h2 className="text-4xl font-bold text-gray-900 text-center mb-16">
-            Not cashing out? Make your crypto work and earn instant yield
+            Not cashing out? Buy a policy and make instant yield.
           </h2>
 
           <div className="flex flex-col lg:flex-row gap-12 items-center">
