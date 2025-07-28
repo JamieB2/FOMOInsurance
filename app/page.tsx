@@ -73,7 +73,7 @@ export default function LandingPage() {
       {/* How It Works Section - Seller Flow */}
       <section id="how-it-works" className="py-24">
         <div className="max-w-8xl mx-auto px-8 sm:px-12 lg:px-32">
-          <h2 className="text-4xl font-bold text-gray-900 text-center mb-16">Cash out in 3 steps</h2>
+          <h2 className="text-4xl font-bold text-gray-900 text-center mb-16">Cash out your crypto in three steps.</h2>
 
           <div className="flex flex-col lg:flex-row gap-12 items-center">
             <div className="flex-shrink-0">
@@ -215,18 +215,18 @@ export default function LandingPage() {
           <h2 className="text-4xl font-bold text-gray-900 mb-8">Powered by Etherlink</h2>
 
           <p className="text-lg text-gray-600 mb-8 leading-relaxed max-w-2xl mx-auto">
-            FOMO Insurance is built on Etherlink, a fast, low-fee Layer 2 network for Ethereum. Etherlink enables:
+            FOMO Insurance runs on Etherlink, a fast, low-cost Layer 2 rollup secured by Tezos. Etherlink enables:
           </p>
 
           <div className="grid md:grid-cols-3 gap-8 mb-8">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Instant, gasless transactions</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Ultrafast transactions</h3>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">High throughput for smooth UX</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Robust security</h3>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Full Ethereum compatibility</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">(Nearly) free transactions</h3>
             </div>
           </div>
 
@@ -258,7 +258,7 @@ export default function LandingPage() {
                 What tokens are supported?
               </AccordionTrigger>
               <AccordionContent className="text-gray-600 leading-relaxed">
-                We currently support major cryptocurrencies including ETH, BTC, and select ERC-20 tokens. Our supported
+                We currently support ETH, BTC, and select ERC-20 tokens. Our supported
                 token list is continuously expanding based on liquidity and community demand.
               </AccordionContent>
             </AccordionItem>
@@ -268,34 +268,50 @@ export default function LandingPage() {
                 What happens at expiry?
               </AccordionTrigger>
               <AccordionContent className="text-gray-600 leading-relaxed">
-                At expiry, your policy automatically settles based on the token's performance. If the price increased
-                beyond your strike, you'll receive your share of the upside in addition to the initial payout you
+                At expiry, your policy automatically settles based on the token's performance. If the price increased, you'll receive your share of the upside in addition to the initial payout you
                 received when creating the policy.
               </AccordionContent>
             </AccordionItem>
 
             <AccordionItem value="item-4" className="border border-gray-200 rounded-lg px-6">
               <AccordionTrigger className="text-left font-semibold text-gray-900 hover:no-underline">
-                What if the price doesn't go up?
+                Can I cancel a policy after listing it?
               </AccordionTrigger>
               <AccordionContent className="text-gray-600 leading-relaxed">
-                If the token price doesn't exceed your strike price by expiry, your policy expires worthless, but you
-                keep the full initial payout. This means you successfully sold at a good time and avoided further
-                downside.
+                Yes. Policies can be cancelled at any time before a buyer accepts. Once a buyer purchases the policy, it becomes locked and cannot be cancelled.
               </AccordionContent>
             </AccordionItem>
 
             <AccordionItem value="item-5" className="border border-gray-200 rounded-lg px-6">
               <AccordionTrigger className="text-left font-semibold text-gray-900 hover:no-underline">
-                How does the swap work?
+                How is the upside share calculated?
               </AccordionTrigger>
               <AccordionContent className="text-gray-600 leading-relaxed">
-                The swap is executed through our smart contract system, which interfaces with decentralized exchanges to
-                provide competitive rates. The process is gasless for users, with fees built into the policy structure
-                for a seamless experience.
+                The upside share is based on the token price at expiry compared to the price when the buyer purchased the policy. Any gains are split according to the agreed upside share.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="item-6" className="border border-gray-200 rounded-lg px-6">
+              <AccordionTrigger className="text-left font-semibold text-gray-900 hover:no-underline">
+                What if the price doesn't go up?
+              </AccordionTrigger>
+              <AccordionContent className="text-gray-600 leading-relaxed">
+                If the market falls over the duration of the policy, you won't be eligible for any upside payment.
+                You keep the full initial payout. This means you successfully sold at a good time compared to if you had HODL.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="item-7" className="border border-gray-200 rounded-lg px-6">
+              <AccordionTrigger className="text-left font-semibold text-gray-900 hover:no-underline">
+                Is my crypto safe while it's locked?
+              </AccordionTrigger>
+              <AccordionContent className="text-gray-600 leading-relaxed">
+                Your crypto remains in your wallet until a buyer purchases your policy. Once purchased, it's securely locked in a smart contract until the policy expires.
               </AccordionContent>
             </AccordionItem>
           </Accordion>
+
+
         </div>
       </section>
 
