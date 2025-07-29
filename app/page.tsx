@@ -5,11 +5,16 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { useState } from "react"
-import { Switch } from "@/components/ui/switch" // Import the Switch component
-import { Label } from "@/components/ui/label" // Import Label for accessibility with Switch
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+import { useAccount } from 'wagmi'
+import { useTomoWallet } from "@/contexts/tomo-wallet-context"
+
 
 export default function LandingPage() {
   const [showFullChart, setShowFullChart] = useState(false)
+  const { isConnected, address } = useAccount()
+  const { connectWallet, isConnecting } = useTomoWallet()
 
   const toggleChart = () => {
     setShowFullChart(!showFullChart)
@@ -34,13 +39,51 @@ export default function LandingPage() {
                 <Link href="#faq" className="text-gray-600 hover:text-blue-600 transition-colors">
                   FAQ
                 </Link>
+                <Link href="/faucet" className="text-gray-600 hover:text-blue-600 transition-colors">
+                  Faucet
+                </Link>
+                {isConnected ? (
+                  <div className="flex items-center space-x-4">
+                    <span className="text-sm text-gray-600">
+                      {address?.slice(0, 6)}...{address?.slice(-4)}
+                    </span>
+                    <Link
+                      href="/app"
+                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Launch dApp
+                    </Link>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={connectWallet}
+                    disabled={isConnecting}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+                  </Button>
+                )}
+              </div>
+            </div>
+            {/* Mobile menu button */}
+            <div className="md:hidden">
+              {isConnected ? (
                 <Link
                   href="/app"
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  className="bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition-colors text-sm"
                 >
                   Launch dApp
                 </Link>
-              </div>
+              ) : (
+                <Button
+                  onClick={connectWallet}
+                  disabled={isConnecting}
+                  className="bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                  size="sm"
+                >
+                  {isConnecting ? 'Connecting...' : 'Connect'}
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -60,21 +103,31 @@ export default function LandingPage() {
                 <br />
                 Get instant liquidity now, and peace of mind that you won't be missing out on the next big market rally.
               </p>
-              <Link href="/app">
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg font-medium rounded-lg transition-colors">
-                  Launch dApp
+              {isConnected ? (
+                <Link href="/app">
+                  <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg font-medium rounded-lg transition-colors">
+                    Launch dApp
+                  </Button>
+                </Link>
+              ) : (
+                <Button 
+                  onClick={connectWallet}
+                  disabled={isConnecting}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg font-medium rounded-lg transition-colors"
+                >
+                  {isConnecting ? 'Connecting...' : 'Connect Wallet'}
                 </Button>
-              </Link>
+              )}
             </div>
             <div className="relative flex flex-col items-center">
               {/* Image displayed with styling */}
               <Image
                 src={showFullChart ? "/images/full_eth.png" : "/images/half_eth.png"}
                 alt="ETH Price Chart"
-                width={960} // Explicit width for Next.js Image component
-                height={720} // Explicit height for Next.js Image component
+                width={960}
+                height={720}
                 className="max-w-full h-auto rounded-xl shadow-lg border border-gray-200 overflow-hidden"
-                priority // Prioritize loading for LCP
+                priority
               />
               {/* Toggle switch */}
               <div className="flex items-center space-x-2 mt-4">
@@ -85,7 +138,7 @@ export default function LandingPage() {
               </div>
               {/* Caption */}
               <p className="text-base text-gray-600 text-center mt-6 max-w-lg mx-auto">
-                You think you’ve sold the top but the market has other plans. FOMO Insurance protects you when the
+                You think you've sold the top but the market has other plans. FOMO Insurance protects you when the
                 market jumps right after you sell.
               </p>
             </div>
@@ -132,7 +185,7 @@ export default function LandingPage() {
                   <div>
                     <h3 className="text-xl font-semibold text-gray-900 mb-3">Get liquidity</h3>
                     <p className="text-gray-600 leading-relaxed">
-                      Upon a buyer acceping your terms, instantly receive stablecoins which you can off ramp.
+                      Upon a buyer accepting your terms, instantly receive stablecoins which you can off ramp.
                     </p>
                   </div>
                 </div>
@@ -283,7 +336,7 @@ export default function LandingPage() {
                 What tokens are supported?
               </AccordionTrigger>
               <AccordionContent className="text-gray-600 leading-relaxed">
-                We currently support ETH, BTC, and select ERC-20 tokens. Our supported token list is continuously
+                We currently support WETH and USDC on Etherlink testnet. Our supported token list is continuously
                 expanding based on liquidity and community demand.
               </AccordionContent>
             </AccordionItem>
@@ -335,8 +388,18 @@ export default function LandingPage() {
                 Is my crypto safe while it's locked?
               </AccordionTrigger>
               <AccordionContent className="text-gray-600 leading-relaxed">
-                Your crypto remains in your wallet until a buyer purchases your policy. Once purchased, it's securely
-                locked in a smart contract until the policy expires.
+                Your crypto is securely locked in audited smart contracts on Etherlink. The contracts are immutable and
+                handle settlement automatically based on oracle price feeds.
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="item-8" className="border border-gray-200 rounded-lg px-6">
+              <AccordionTrigger className="text-left font-semibold text-gray-900 hover:no-underline">
+                How do I get test tokens?
+              </AccordionTrigger>
+              <AccordionContent className="text-gray-600 leading-relaxed">
+                Visit our <Link href="/faucet" className="text-blue-600 hover:underline">faucet page</Link> to claim free 
+                WETH and USDC test tokens for the Etherlink testnet. You can claim once every 24 hours.
               </AccordionContent>
             </AccordionItem>
           </Accordion>
@@ -351,6 +414,12 @@ export default function LandingPage() {
             <div className="flex space-x-8">
               <Link href="/app" className="text-gray-600 hover:text-blue-600 transition-colors">
                 App
+              </Link>
+              <Link href="/faucet" className="text-gray-600 hover:text-blue-600 transition-colors">
+                Faucet
+              </Link>
+              <Link href="https://testnet.explorer.etherlink.com" target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-blue-600 transition-colors">
+                Explorer
               </Link>
             </div>
           </div>

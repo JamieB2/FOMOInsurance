@@ -1,196 +1,524 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { parseUnits, maxUint256 } from "viem"
 import { Slider } from "@/components/ui/slider"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { AlertCircle, CheckCircle, Loader2, AlertTriangle } from "lucide-react"
 import Link from "next/link"
-
-// Mock data for policies
-const mockPolicies = [
-  {
-    id: 1,
-    token: "ETH",
-    amount: "2.5",
-    duration: 30,
-    immediatePayout: 85,
-    upsideShare: 25,
-    usdValue: 4250,
-    status: "Open",
-  },
-  {
-    id: 2,
-    token: "BTC",
-    amount: "0.1",
-    duration: 60,
-    immediatePayout: 80,
-    upsideShare: 30,
-    usdValue: 6800,
-    status: "Open",
-  },
-  {
-    id: 3,
-    token: "ETH",
-    amount: "5.0",
-    duration: 45,
-    immediatePayout: 90,
-    upsideShare: 20,
-    usdValue: 8500,
-    status: "Ongoing",
-    purchasePrice: 1800,
-    currentPrice: 1950,
-    endDate: "2024-03-15",
-  },
-  {
-    id: 4,
-    token: "BTC",
-    amount: "0.05",
-    duration: 90,
-    immediatePayout: 75,
-    upsideShare: 35,
-    usdValue: 3400,
-    status: "Finished",
-    purchasePrice: 68000,
-    finalPrice: 72000,
-    endDate: "2024-01-30",
-  },
-  {
-    id: 5,
-    token: "ETH",
-    amount: "1.8",
-    duration: 21,
-    immediatePayout: 92,
-    upsideShare: 18,
-    usdValue: 3060,
-    status: "Open",
-  },
-  {
-    id: 6,
-    token: "BTC",
-    amount: "0.15",
-    duration: 14,
-    immediatePayout: 88,
-    upsideShare: 22,
-    usdValue: 10200,
-    status: "Ongoing",
-    purchasePrice: 70000,
-    currentPrice: 68500,
-    endDate: "2024-02-28",
-  },
-  {
-    id: 7,
-    token: "ETH",
-    amount: "3.2",
-    duration: 75,
-    immediatePayout: 95,
-    upsideShare: 15,
-    usdValue: 5440,
-    status: "Open",
-  },
-  {
-    id: 8,
-    token: "BTC",
-    amount: "0.08",
-    duration: 35,
-    immediatePayout: 82,
-    upsideShare: 28,
-    usdValue: 5440,
-    status: "Finished",
-    purchasePrice: 65000,
-    finalPrice: 63000,
-    endDate: "2024-01-15",
-  },
-  {
-    id: 9,
-    token: "ETH",
-    amount: "4.1",
-    duration: 7,
-    immediatePayout: 96,
-    upsideShare: 12,
-    usdValue: 6970,
-    status: "Open",
-  },
-  {
-    id: 10,
-    token: "BTC",
-    amount: "0.25",
-    duration: 50,
-    immediatePayout: 78,
-    upsideShare: 32,
-    usdValue: 17000,
-    status: "Ongoing",
-    purchasePrice: 69000,
-    currentPrice: 71500,
-    endDate: "2024-03-20",
-  },
-  {
-    id: 11,
-    token: "ETH",
-    amount: "6.0",
-    duration: 28,
-    immediatePayout: 87,
-    upsideShare: 26,
-    usdValue: 10200,
-    status: "Finished",
-    purchasePrice: 1750,
-    finalPrice: 2100,
-    endDate: "2024-01-20",
-  },
-  {
-    id: 12,
-    token: "BTC",
-    amount: "0.12",
-    duration: 42,
-    immediatePayout: 91,
-    upsideShare: 19,
-    usdValue: 8160,
-    status: "Open",
-  },
-]
+import { useAccount, useReadContract } from 'wagmi'
+import { useTomoWallet } from '@/contexts/tomo-wallet-context'
+import { 
+  useCreatePolicy, 
+  usePurchasePolicy, 
+  useOpenPolicies, 
+  usePolicyDetails, 
+  useProtocolStats,
+  useFaucetBalance,
+  useTokenApproval,
+  useContractValidation,
+  formatTokenAmount,
+  parseTokenAmount
+} from '@/hooks/useContracts'
+import { CONTRACT_ADDRESSES } from '@/lib/web3-config'
+import { MOCK_USDC_ABI, MOCK_WETH_ABI } from "@/lib/contract-abis"
 
 export default function AppPage() {
+  // Wallet connection
+  const { address, isConnected } = useAccount()
+  const { connectWallet, isLoading: isConnecting } = useTomoWallet()
+
   // Form state
   const [amount, setAmount] = useState("")
-  const [selectedToken, setSelectedToken] = useState("ETH")
+  const [selectedToken, setSelectedToken] = useState<'WETH' | 'USDC'>('WETH')
   const [immediatePayout, setImmediatePayout] = useState([95])
   const [duration, setDuration] = useState([30])
   const [upsideShare, setUpsideShare] = useState([25])
   const [selectedScenario, setSelectedScenario] = useState(20)
+  
+  // UI state
+  const [showSuccessAlert, setShowSuccessAlert] = useState(false)
+  const [showErrorAlert, setShowErrorAlert] = useState(false)
+  const [showWarningAlert, setShowWarningAlert] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
+  const [warningMessage, setWarningMessage] = useState("")
+  const [successMessage, setSuccessMessage] = useState("")
+  const [isWaitingForConfirmation, setIsWaitingForConfirmation] = useState(false)
 
-  // Filter state
-  const [payoutRange, setPayoutRange] = useState([75, 98])
-  const [durationRange, setDurationRange] = useState([1, 90])
-  const [upsideRange, setUpsideRange] = useState([10, 50])
-  const [statusFilter, setStatusFilter] = useState({
-    open: true,
-    ongoing: true,
-    finished: true,
+  // Contract hooks
+  const { data: tokenBalance, refetch: refetchTokenBalance } = useFaucetBalance(selectedToken)
+  const { data: usdcBalance } = useFaucetBalance('USDC')
+  const { createPolicy, isPending: isCreating, isSuccess: policyCreated, error: createError } = useCreatePolicy()
+  const { purchasePolicy, isPending: isPurchasing } = usePurchasePolicy()
+  const { data: openPolicyIds, refetch: refetchOpenPolicies } = useOpenPolicies()
+  const { data: protocolStats } = useProtocolStats()
+  const { approve, isPending: isApproving, isSuccess: isApprovalSuccess, error: approvalError } = useTokenApproval(selectedToken)
+
+  // Contract validation
+  const { isPaused, isWethSupported, isUsdcSupported, isUsdcPayoutSupported, isValid: isContractValid } = useContractValidation()
+
+  // Read current allowance with enhanced error handling
+  const { data: currentAllowance, refetch: refetchAllowance, error: allowanceError } = useReadContract({
+    address: CONTRACT_ADDRESSES[`MOCK_${selectedToken}`],
+    abi: selectedToken === 'WETH' ? MOCK_WETH_ABI : MOCK_USDC_ABI,
+    functionName: 'allowance',
+    args: address ? [address, CONTRACT_ADDRESSES.POLICY_MANAGER] : undefined,
+    query: { 
+      enabled: !!address,
+      refetchInterval: 3000,
+      retry: 3,
+      retryDelay: 1000
+    },
   })
 
-  // Calculate preview values
-  const tokenPrice = selectedToken === "ETH" ? 1700 : selectedToken === "BTC" ? 68000 : 1
-  const totalValue = Number.parseFloat(amount || "0") * tokenPrice
-  const immediateReceive = totalValue * (immediatePayout[0] / 100)
-  const exampleUpside = totalValue * 0.2 * (upsideShare[0] / 100)
+  // Mock price data
+  const mockPrices = { WETH: 1700, USDC: 1 }
 
-  // Filter policies
-  const filteredPolicies = mockPolicies.filter((policy) => {
-    const statusMatch =
-      (statusFilter.open && policy.status === "Open") ||
-      (statusFilter.ongoing && policy.status === "Ongoing") ||
-      (statusFilter.finished && policy.status === "Finished")
+  // Enhanced form validation with detailed error messages
+  const validateForm = () => {
+    if (!amount || amount === '') {
+      return { isValid: false, error: 'Please enter an amount' }
+    }
+    
+    const numAmount = parseFloat(amount)
+    if (isNaN(numAmount) || numAmount <= 0) {
+      return { isValid: false, error: 'Amount must be a positive number' }
+    }
+    
+    if (numAmount > 1000000) {
+      return { isValid: false, error: 'Amount is too large' }
+    }
+    
+    if (!selectedToken) {
+      return { isValid: false, error: 'Please select a token' }
+    }
+    
+    return { isValid: true, error: null }
+  }
 
-    const payoutMatch = policy.immediatePayout >= payoutRange[0] && policy.immediatePayout <= payoutRange[1]
-    const durationMatch = policy.duration >= durationRange[0] && policy.duration <= durationRange[1]
-    const upsideMatch = policy.upsideShare >= upsideRange[0] && policy.upsideShare <= upsideRange[1]
+  // Calculate values with error handling
+  const calculateValues = () => {
+    try {
+      const tokenPrice = mockPrices[selectedToken]
+      const totalValue = parseFloat(amount || "0") * tokenPrice
+      const immediateReceive = totalValue * (immediatePayout[0] / 100)
+      const exampleUpside = totalValue * (selectedScenario / 100) * (upsideShare[0] / 100)
+      return { totalValue, immediateReceive, exampleUpside }
+    } catch (error) {
+      console.error('Error calculating values:', error)
+      return { totalValue: 0, immediateReceive: 0, exampleUpside: 0 }
+    }
+  }
 
-    return statusMatch && payoutMatch && durationMatch && upsideMatch
-  })
+  const { totalValue, immediateReceive, exampleUpside } = calculateValues()
 
-  const isFormValid = amount && selectedToken
+  // Enhanced form validation
+  const formValidation = validateForm()
+  const isFormValid = formValidation.isValid
+  const tokenDecimals = selectedToken === 'WETH' ? 18 : 6
+  const amountAsBigInt = isFormValid ? parseUnits(amount, tokenDecimals) : 0n
+  const hasEnoughAllowance = currentAllowance ? currentAllowance >= amountAsBigInt : false
+  const hasEnoughBalance = tokenBalance ? tokenBalance >= amountAsBigInt : false
+
+  // Get formatted balances
+  const formattedBalance = tokenBalance ? formatTokenAmount(tokenBalance, selectedToken) : '0'
+  const formattedUsdcBalance = usdcBalance ? formatTokenAmount(usdcBalance, 'USDC') : '0'
+
+  // Enhanced error message generator
+  const getErrorMessage = (error: any, context: string): string => {
+    if (!error) return ''
+    
+    let message = `${context} failed`
+    
+    if (error.message) {
+      if (error.message.includes('User rejected') || error.message.includes('user rejected')) {
+        message = 'Transaction was cancelled by user'
+      } else if (error.message.includes('insufficient funds')) {
+        message = 'Insufficient funds for gas fees'
+      } else if (error.message.includes('execution reverted')) {
+        const revertMatch = error.message.match(/execution reverted:?\s*(.+?)(?:\n|$|,)/)
+        if (revertMatch && revertMatch[1]) {
+          message = `Transaction failed: ${revertMatch[1].trim()}`
+        } else {
+          message = 'Transaction was rejected by the smart contract'
+        }
+      } else if (error.message.includes('network')) {
+        message = 'Network error. Please check your connection and try again.'
+      } else if (error.message.includes('timeout')) {
+        message = 'Transaction timed out. Please try again.'
+      } else {
+        message = error.message
+      }
+    }
+    
+    return message
+  }
+
+  // Handle approval with enhanced error handling
+  const handleApprove = async () => {
+    try {
+      if (!isFormValid) {
+        setErrorMessage(formValidation.error || 'Please fix form errors before approving')
+        setShowErrorAlert(true)
+        return
+      }
+
+      if (!isContractValid) {
+        setErrorMessage('Contract is not ready. Please check if tokens are supported.')
+        setShowErrorAlert(true)
+        return
+      }
+      
+      setShowErrorAlert(false)
+      setShowWarningAlert(false)
+      
+      console.log(`Approving ${selectedToken} for PolicyManager...`)
+      console.log('Contract address:', CONTRACT_ADDRESSES[`MOCK_${selectedToken}`])
+      console.log('Spender address:', CONTRACT_ADDRESSES.POLICY_MANAGER)
+      
+      approve(CONTRACT_ADDRESSES.POLICY_MANAGER, maxUint256)
+    } catch (error) {
+      console.error('Approval preparation failed:', error)
+      setErrorMessage('Failed to prepare approval transaction')
+      setShowErrorAlert(true)
+    }
+  }
+
+  // Handle policy creation with enhanced validation and error handling
+  const handleCreatePolicy = async () => {
+    try {
+      // Pre-flight checks
+      if (!isConnected) {
+        setErrorMessage('Please connect your wallet first')
+        setShowErrorAlert(true)
+        return
+      }
+
+      if (!isFormValid) {
+        setErrorMessage(formValidation.error || 'Please fix form errors')
+        setShowErrorAlert(true)
+        return
+      }
+
+      if (!isContractValid) {
+        setErrorMessage('Contracts are not ready. Please try again later.')
+        setShowErrorAlert(true)
+        return
+      }
+
+      if (isPaused) {
+        setErrorMessage('The contract is currently paused. Please try again later.')
+        setShowErrorAlert(true)
+        return
+      }
+
+      if (!hasEnoughBalance) {
+        setErrorMessage(`Insufficient ${selectedToken} balance. You need ${amount} but only have ${parseFloat(formattedBalance).toFixed(4)}`)
+        setShowErrorAlert(true)
+        return
+      }
+
+      if (!hasEnoughAllowance) {
+        setErrorMessage(`Please approve ${selectedToken} first`)
+        setShowErrorAlert(true)
+        return
+      }
+
+      // Parameter validation
+      if (immediatePayout[0] < 90 || immediatePayout[0] > 98) {
+        setErrorMessage('Immediate payout must be between 90% and 98%')
+        setShowErrorAlert(true)
+        return
+      }
+
+      if (upsideShare[0] < 10 || upsideShare[0] > 50) {
+        setErrorMessage('Upside share must be between 10% and 50%')
+        setShowErrorAlert(true)
+        return
+      }
+
+      if (duration[0] < 1 || duration[0] > 90) {
+        setErrorMessage('Duration must be between 1 and 90 days')
+        setShowErrorAlert(true)
+        return
+      }
+
+      setShowErrorAlert(false)
+      setShowWarningAlert(false)
+
+      // 🔥 FIX: Use proper symbols for price oracle
+      const tokenSymbolForOracle = selectedToken === 'WETH' ? 'ETH' : 'USDC'
+
+      const policyParams = {
+        token: CONTRACT_ADDRESSES[`MOCK_${selectedToken}`],
+        tokenSymbol: tokenSymbolForOracle, // Use ETH/USDC for price oracle
+        amount,
+        payoutToken: CONTRACT_ADDRESSES.MOCK_USDC,
+        payoutBps: immediatePayout[0] * 100,
+        duration: duration[0] * 24 * 60 * 60, // Convert days to seconds
+        upsideShareBps: upsideShare[0] * 100,
+      }
+
+      console.log('Creating policy with params:', policyParams)
+      console.log('Token symbol for oracle:', tokenSymbolForOracle)
+      console.log('Duration in seconds:', policyParams.duration)
+      console.log('PayoutBps:', policyParams.payoutBps)
+      console.log('UpsideShareBps:', policyParams.upsideShareBps)
+
+      createPolicy(policyParams)
+    } catch (error) {
+      console.error('Policy creation preparation failed:', error)
+      setErrorMessage('Failed to prepare policy creation')
+      setShowErrorAlert(true)
+    }
+  }
+
+  // Enhanced approval success handling
+  useEffect(() => {
+    if (isApprovalSuccess) {
+      console.log('Approval transaction successful! Waiting for confirmation...')
+      setIsWaitingForConfirmation(true)
+      setSuccessMessage(`${selectedToken} approval submitted! Waiting for blockchain confirmation...`)
+      setShowSuccessAlert(true)
+      
+      // Wait for transaction to be mined
+      const refetchWithDelay = async () => {
+        try {
+          await new Promise(resolve => setTimeout(resolve, 3000))
+          console.log('Refetching allowance after approval...')
+          const result = await refetchAllowance()
+          
+          // Check again after another delay
+          setTimeout(async () => {
+            try {
+              const secondResult = await refetchAllowance()
+              console.log('Allowance after second check:', secondResult.data?.toString())
+              setIsWaitingForConfirmation(false)
+              
+              if (secondResult.data && secondResult.data > 0n) {
+                setSuccessMessage(`${selectedToken} approved successfully! You can now create your policy.`)
+                setShowSuccessAlert(true)
+                setTimeout(() => setShowSuccessAlert(false), 5000)
+              } else {
+                setWarningMessage('Approval may still be processing. Please wait a moment and try again.')
+                setShowWarningAlert(true)
+                setTimeout(() => setShowWarningAlert(false), 8000)
+              }
+            } catch (error) {
+              console.error('Error checking allowance:', error)
+              setWarningMessage('Unable to verify approval status. Please check your transaction.')
+              setShowWarningAlert(true)
+            }
+          }, 3000)
+        } catch (error) {
+          console.error('Error refetching allowance:', error)
+          setIsWaitingForConfirmation(false)
+          setWarningMessage('Unable to verify approval. Please check your wallet.')
+          setShowWarningAlert(true)
+        }
+      }
+      
+      refetchWithDelay()
+    }
+  }, [isApprovalSuccess, refetchAllowance, selectedToken])
+
+  // Enhanced policy creation success handling
+  useEffect(() => {
+    if (policyCreated) {
+      console.log('Policy created successfully!')
+      
+      // Reset form
+      setAmount("")
+      setImmediatePayout([95])
+      setDuration([30])
+      setUpsideShare([25])
+      
+      // Refetch data
+      Promise.all([
+        refetchAllowance(),
+        refetchTokenBalance(),
+        refetchOpenPolicies()
+      ]).catch(error => {
+        console.error('Error refetching data after policy creation:', error)
+      })
+      
+      // Show success message
+      setSuccessMessage('Policy created successfully! It will appear in the marketplace below.')
+      setShowSuccessAlert(true)
+      setTimeout(() => setShowSuccessAlert(false), 5000)
+    }
+  }, [policyCreated, refetchAllowance, refetchTokenBalance, refetchOpenPolicies])
+
+  // Enhanced error handling
+  useEffect(() => {
+    if (createError) {
+      const errorMsg = getErrorMessage(createError, 'Policy creation')
+      console.error('Create error:', createError)
+      setErrorMessage(errorMsg)
+      setShowErrorAlert(true)
+    }
+  }, [createError])
+
+  useEffect(() => {
+    if (approvalError) {
+      const errorMsg = getErrorMessage(approvalError, `${selectedToken} approval`)
+      console.error('Approval error:', approvalError)
+      setErrorMessage(errorMsg)
+      setShowErrorAlert(true)
+    }
+  }, [approvalError, selectedToken])
+
+  useEffect(() => {
+    if (allowanceError) {
+      console.error('Allowance query error:', allowanceError)
+      setWarningMessage('Unable to check token allowance. Please refresh the page.')
+      setShowWarningAlert(true)
+    }
+  }, [allowanceError])
+
+  // Clear alerts when form changes
+  useEffect(() => {
+    setShowErrorAlert(false)
+    setShowWarningAlert(false)
+    setIsWaitingForConfirmation(false)
+  }, [amount, selectedToken, immediatePayout, duration, upsideShare])
+
+  // Contract validation warning
+  useEffect(() => {
+    if (isConnected && isPaused !== undefined && isPaused) {
+      setWarningMessage('The protocol is currently paused. Policy creation is temporarily disabled.')
+      setShowWarningAlert(true)
+    } else if (isConnected && !isContractValid && isPaused === false) {
+      setWarningMessage('Some tokens may not be supported. Please contact support if issues persist.')
+      setShowWarningAlert(true)
+    }
+  }, [isConnected, isPaused, isContractValid])
+
+  // Enhanced Policy Component with error handling
+  const PolicyCard = ({ policyId }: { policyId: number }) => {
+    const { data: policyDetails, error: policyError } = usePolicyDetails(policyId)
+    
+    if (policyError) {
+      return (
+        <div className="bg-white border border-red-200 rounded-2xl p-6">
+          <div className="text-center text-red-600">
+            <AlertCircle className="w-8 h-8 mx-auto mb-2" />
+            <p className="text-sm">Failed to load policy details</p>
+          </div>
+        </div>
+      )
+    }
+    
+    if (!policyDetails) {
+      return (
+        <div className="bg-white border border-gray-200 rounded-2xl p-6 animate-pulse">
+          <div className="h-6 bg-gray-200 rounded mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded mb-2"></div>
+          <div className="h-4 bg-gray-200 rounded"></div>
+        </div>
+      )
+    }
+
+    const [policy, currentPrice, timeRemaining, potentialSellerPayout, potentialBuyerPayout, canSettle] = policyDetails
+
+    const tokenSymbol = policy.tokenSymbol
+    const tokenAmount = formatTokenAmount(policy.amount, tokenSymbol as 'WETH' | 'USDC')
+    const payoutAmount = formatTokenAmount(policy.payoutAmount, 'USDC')
+    const upsideSharePercent = Number(policy.upsideShareBps) / 100
+    const durationDays = Number(policy.duration) / (24 * 60 * 60)
+
+    const stateNames = ['Open', 'Active', 'Settled', 'Cancelled']
+    const stateName = stateNames[policy.state] || 'Unknown'
+
+    const handlePurchase = async () => {
+      try {
+        if (!isConnected) {
+          await connectWallet()
+          return
+        }
+        purchasePolicy(policyId)
+      } catch (error) {
+        console.error('Error initiating policy purchase:', error)
+      }
+    }
+
+    return (
+      <div className="bg-white border border-gray-200 rounded-2xl p-6">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h3 className="text-2xl font-bold text-gray-900">
+              {parseFloat(tokenAmount).toFixed(4)} {tokenSymbol}
+            </h3>
+            <p className="text-sm text-gray-600">
+              ≈ ${(parseFloat(tokenAmount) * mockPrices[tokenSymbol as keyof typeof mockPrices]).toLocaleString()}
+            </p>
+          </div>
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-medium ${
+              stateName === "Open"
+                ? "bg-green-100 text-green-700"
+                : stateName === "Active"
+                  ? "bg-blue-100 text-blue-700"
+                  : "bg-gray-100 text-gray-700"
+            }`}
+          >
+            {stateName}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <p className="text-sm text-gray-600">Immediate Payout</p>
+            <p className="text-lg font-semibold text-gray-900">
+              ${parseFloat(payoutAmount).toFixed(2)}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Duration</p>
+            <p className="text-lg font-semibold text-gray-900">{durationDays} days</p>
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <p className="text-sm text-gray-600">Upside Share</p>
+          <p className="text-lg font-semibold text-gray-900">{upsideSharePercent}%</p>
+        </div>
+
+        {stateName === "Active" && timeRemaining > 0 && (
+          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+            <p className="text-sm text-gray-600">Time Remaining</p>
+            <p className="text-sm font-medium text-gray-900">
+              {Math.floor(Number(timeRemaining) / 86400)} days {Math.floor((Number(timeRemaining) % 86400) / 3600)} hours
+            </p>
+          </div>
+        )}
+
+        {stateName === "Open" && (
+          <Button 
+            className="w-full bg-blue-600 hover:bg-blue-700"
+            onClick={handlePurchase}
+            disabled={isPurchasing || policy.seller === address}
+          >
+            {isPurchasing ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Purchasing...
+              </>
+            ) : policy.seller === address ? (
+              'Your Policy'
+            ) : (
+              `Buy for $${parseFloat(payoutAmount).toFixed(2)}`
+            )}
+          </Button>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -203,9 +531,23 @@ export default function AppPage() {
               <Link href="/my-policies" className="text-gray-600 hover:text-gray-900">
                 My Policies
               </Link>
-              <Button variant="outline" className="border-blue-200 text-blue-600 hover:bg-blue-50 bg-transparent">
-                Connect Wallet
-              </Button>
+              <Link href="/faucet" className="text-gray-600 hover:text-gray-900">
+                Faucet
+              </Link>
+              {isConnected ? (
+                <span className="text-sm text-gray-600">
+                  {address?.slice(0, 6)}...{address?.slice(-4)}
+                </span>
+              ) : (
+                <Button 
+                  onClick={connectWallet}
+                  disabled={isConnecting}
+                  variant="outline" 
+                  className="border-blue-200 text-blue-600 hover:bg-blue-50 bg-transparent"
+                >
+                  {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -217,9 +559,46 @@ export default function AppPage() {
           <h2 className="text-3xl font-bold text-gray-900 mb-4">Create Policy</h2>
           <div className="mb-8">
             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-700">
-              Etherlink Network
+              Etherlink Testnet
             </span>
           </div>
+
+          {/* Enhanced Alerts */}
+          {!isConnected && (
+            <Alert className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                Please connect your wallet to create and manage policies.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {showSuccessAlert && (
+            <Alert className="mb-6">
+              <CheckCircle className="h-4 w-4" />
+              <AlertDescription>
+                {successMessage}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {showWarningAlert && (
+            <Alert className="mb-6" variant="default">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                {warningMessage}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {showErrorAlert && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                {errorMessage}
+              </AlertDescription>
+            </Alert>
+          )}
 
           <div className="bg-white border border-gray-200 rounded-2xl p-8">
             <div className="grid lg:grid-cols-2 gap-12">
@@ -235,20 +614,39 @@ export default function AppPage() {
                         placeholder="0.00"
                         value={amount}
                         onChange={(e) => setAmount(e.target.value)}
-                        className="text-lg h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield]"
+                        className={`text-lg h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500 [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [-moz-appearance:textfield] ${
+                          !isFormValid && amount ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : ''
+                        }`}
                       />
+                      {!isFormValid && amount && (
+                        <p className="text-sm text-red-500 mt-1">{formValidation.error}</p>
+                      )}
                     </div>
-                    <Select value={selectedToken} onValueChange={setSelectedToken}>
+                    <Select value={selectedToken} onValueChange={(value: 'WETH' | 'USDC') => setSelectedToken(value)}>
                       <SelectTrigger className="w-32 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                         <SelectValue placeholder="Token" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="ETH">ETH</SelectItem>
-                        <SelectItem value="BTC">BTC</SelectItem>
+                        <SelectItem value="WETH">WETH</SelectItem>
+                        <SelectItem value="USDC">USDC</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  {amount && selectedToken && <p className="text-sm text-gray-600">≈ ${totalValue.toLocaleString()}</p>}
+                  {amount && selectedToken && isFormValid && (
+                    <p className="text-sm text-gray-600">≈ ${totalValue.toLocaleString()}</p>
+                  )}
+                  {isConnected && (
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-500">
+                        Balance: {parseFloat(formattedBalance).toFixed(4)} {selectedToken}
+                      </p>
+                      {!hasEnoughBalance && isFormValid && (
+                        <p className="text-sm text-red-500">
+                          Insufficient balance. You need {amount} {selectedToken} but only have {parseFloat(formattedBalance).toFixed(4)}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Sliders */}
@@ -317,6 +715,11 @@ export default function AppPage() {
                   <div className="h-12 px-3 py-2 border border-gray-200 rounded-md bg-gray-50 flex items-center">
                     <span className="text-gray-900 font-medium">USDC</span>
                   </div>
+                  {isConnected && (
+                    <p className="text-sm text-gray-500 mt-2">
+                      USDC Balance: {parseFloat(formattedUsdcBalance).toFixed(2)}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -336,7 +739,6 @@ export default function AppPage() {
                     <div className="space-y-4">
                       <h4 className="text-sm font-medium text-gray-700">Additional Upside if Market Rallies</h4>
 
-                      {/* Pill Toggle */}
                       <div className="flex bg-gray-100 rounded-lg p-1">
                         {[20, 40, 60].map((scenario) => (
                           <button
@@ -353,11 +755,10 @@ export default function AppPage() {
                         ))}
                       </div>
 
-                      {/* Single Result Display */}
                       <div className="bg-white rounded-lg p-4 border border-gray-200">
                         <div className="mb-2">
                           <span className="text-2xl font-bold text-green-600">
-                            ${(totalValue * (selectedScenario / 100) * (upsideShare[0] / 100)).toLocaleString()}
+                            ${exampleUpside.toLocaleString()}
                           </span>
                         </div>
                         <p className="text-sm text-gray-600 mb-1">Your additional upside share</p>
@@ -384,11 +785,82 @@ export default function AppPage() {
                       </div>
                     </div>
 
-                    {/* Create Policy Button - positioned at bottom right */}
+                    {/* Debug Info (only in development) */}
+                    {process.env.NODE_ENV === 'development' && (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs">
+                        <h5 className="font-medium text-yellow-800 mb-2">Debug Info:</h5>
+                        <div className="space-y-1 text-yellow-700">
+                          <div>Connected: {isConnected ? 'Yes' : 'No'}</div>
+                          <div>Form Valid: {isFormValid ? 'Yes' : 'No'}</div>
+                          <div>Has Balance: {hasEnoughBalance ? 'Yes' : 'No'}</div>
+                          <div>Has Allowance: {hasEnoughAllowance ? 'Yes' : 'No'}</div>
+                          <div>Contract Valid: {isContractValid ? 'Yes' : 'No'}</div>
+                          <div>Contract Paused: {isPaused ? 'Yes' : 'No'}</div>
+                          <div>Current Allowance: {currentAllowance?.toString() || '0'}</div>
+                          <div>Amount Needed: {amountAsBigInt.toString()}</div>
+                          <div>Token Address: {CONTRACT_ADDRESSES[`MOCK_${selectedToken}`]}</div>
+                          <div>PolicyManager: {CONTRACT_ADDRESSES.POLICY_MANAGER}</div>
+                          <div>Is Approving: {isApproving ? 'Yes' : 'No'}</div>
+                          <div>Is Creating: {isCreating ? 'Yes' : 'No'}</div>
+                          <div>Waiting for Confirmation: {isWaitingForConfirmation ? 'Yes' : 'No'}</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Enhanced Action Button */}
                     <div className="flex justify-end pt-4">
-                      <Button className="bg-blue-600 hover:bg-blue-700 px-6 py-2" disabled={!isFormValid}>
-                        Create Policy
-                      </Button>
+                      {!isConnected ? (
+                        <Button onClick={connectWallet} disabled={isConnecting} className="bg-blue-600 hover:bg-blue-700 px-6 py-2">
+                          {isConnecting ? 'Connecting...' : 'Connect Wallet'}
+                        </Button>
+                      ) : !isFormValid ? (
+                        <Button disabled className="bg-gray-400 px-6 py-2">
+                          {formValidation.error || 'Enter Amount'}
+                        </Button>
+                      ) : isPaused ? (
+                        <Button disabled className="bg-gray-400 px-6 py-2">
+                          Contract Paused
+                        </Button>
+                      ) : !hasEnoughBalance ? (
+                        <Button disabled className="bg-gray-400 px-6 py-2">
+                          Insufficient Balance
+                        </Button>
+                      ) : !hasEnoughAllowance ? (
+                        <Button 
+                          onClick={handleApprove} 
+                          disabled={isApproving || isWaitingForConfirmation} 
+                          className="bg-blue-600 hover:bg-blue-700 px-6 py-2"
+                        >
+                          {isApproving ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Approving...
+                            </>
+                          ) : isWaitingForConfirmation ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Confirming...
+                            </>
+                          ) : (
+                            `Approve ${selectedToken}`
+                          )}
+                        </Button>
+                      ) : (
+                        <Button 
+                          onClick={handleCreatePolicy} 
+                          disabled={isCreating} 
+                          className="bg-blue-600 hover:bg-blue-700 px-6 py-2"
+                        >
+                          {isCreating ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Creating...
+                            </>
+                          ) : (
+                            'Create Policy'
+                          )}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ) : (
@@ -401,183 +873,31 @@ export default function AppPage() {
 
         {/* Policy Marketplace */}
         <section>
-          <h2 className="text-3xl font-bold text-gray-900 mb-8">Policy Marketplace</h2>
-
-          {/* Filters */}
-          <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-8">
-            <div className="grid lg:grid-cols-4 gap-8">
-              <div>
-                <Label className="text-sm font-medium text-gray-900 mb-4 block">Immediate Payout %</Label>
-                <Slider
-                  value={payoutRange}
-                  onValueChange={setPayoutRange}
-                  max={98}
-                  min={90}
-                  step={1}
-                  className="w-full [&_[data-radix-slider-track]]:bg-gray-200 [&_[data-radix-slider-range]]:bg-blue-600 [&_[data-radix-slider-thumb]]:bg-blue-600 [&_[data-radix-slider-thumb]]:border-blue-600"
-                />
-                <div className="flex justify-between text-xs text-gray-500 mt-2">
-                  <span>{payoutRange[0]}%</span>
-                  <span>{payoutRange[1]}%</span>
-                </div>
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-3xl font-bold text-gray-900">Policy Marketplace</h2>
+            {protocolStats && (
+              <div className="text-sm text-gray-600">
+                {Number(protocolStats[0])} open policies
               </div>
-
-              <div>
-                <Label className="text-sm font-medium text-gray-900 mb-4 block">Duration (days)</Label>
-                <Slider
-                  value={durationRange}
-                  onValueChange={setDurationRange}
-                  max={90}
-                  min={1}
-                  step={1}
-                  className="w-full [&_[data-radix-slider-track]]:bg-gray-200 [&_[data-radix-slider-range]]:bg-blue-600 [&_[data-radix-slider-thumb]]:bg-blue-600 [&_[data-radix-slider-thumb]]:border-blue-600"
-                />
-                <div className="flex justify-between text-xs text-gray-500 mt-2">
-                  <span>{durationRange[0]}</span>
-                  <span>{durationRange[1]}</span>
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-gray-900 mb-4 block">Upside Share %</Label>
-                <Slider
-                  value={upsideRange}
-                  onValueChange={setUpsideRange}
-                  max={50}
-                  min={10}
-                  step={1}
-                  className="w-full [&_[data-radix-slider-track]]:bg-gray-200 [&_[data-radix-slider-range]]:bg-blue-600 [&_[data-radix-slider-thumb]]:bg-blue-600 [&_[data-radix-slider-thumb]]:border-blue-600"
-                />
-                <div className="flex justify-between text-xs text-gray-500 mt-2">
-                  <span>{upsideRange[0]}%</span>
-                  <span>{upsideRange[1]}%</span>
-                </div>
-              </div>
-
-              <div>
-                <Label className="text-sm font-medium text-gray-900 mb-4 block">Status</Label>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={statusFilter.open}
-                      onCheckedChange={(checked) => setStatusFilter((prev) => ({ ...prev, open: checked }))}
-                    />
-                    <span className="text-sm text-gray-700">Open</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={statusFilter.ongoing}
-                      onCheckedChange={(checked) => setStatusFilter((prev) => ({ ...prev, ongoing: checked }))}
-                    />
-                    <span className="text-sm text-gray-700">Ongoing</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={statusFilter.finished}
-                      onCheckedChange={(checked) => setStatusFilter((prev) => ({ ...prev, finished: checked }))}
-                    />
-                    <span className="text-sm text-gray-700">Finished</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Policy Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredPolicies.map((policy) => (
-              <div key={policy.id} className="bg-white border border-gray-200 rounded-2xl p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="text-2xl font-bold text-gray-900">
-                      {policy.amount} {policy.token}
-                    </h3>
-                    <p className="text-sm text-gray-600">≈ ${policy.usdValue.toLocaleString()}</p>
-                  </div>
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      policy.status === "Open"
-                        ? "bg-green-100 text-green-700"
-                        : policy.status === "Ongoing"
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-gray-100 text-gray-700"
-                    }`}
-                  >
-                    {policy.status}
-                  </span>
+            {openPolicyIds && openPolicyIds.length > 0 ? (
+              openPolicyIds.map((policyId) => (
+                <PolicyCard key={Number(policyId)} policyId={Number(policyId)} />
+              ))
+            ) : (
+              <div className="col-span-full text-center py-16">
+                <div className="max-w-md mx-auto">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4">No policies available</h3>
+                  <p className="text-gray-600 mb-8">
+                    Be the first to create a policy in the marketplace!
+                  </p>
                 </div>
-
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <p className="text-sm text-gray-600">Immediate Payout</p>
-                    <p className="text-lg font-semibold text-gray-900">{policy.immediatePayout}%</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Duration</p>
-                    <p className="text-lg font-semibold text-gray-900">{policy.duration} days</p>
-                  </div>
-                </div>
-
-                <div className="mb-4">
-                  <p className="text-sm text-gray-600">Upside Share</p>
-                  <p className="text-lg font-semibold text-gray-900">{policy.upsideShare}%</p>
-                </div>
-
-                {/* Enhanced Status Info */}
-                {(policy.status === "Ongoing" || policy.status === "Finished") && (
-                  <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-2">
-                      Ends on{" "}
-                      {new Date(policy.endDate).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </p>
-
-                    {policy.status === "Finished" ? (
-                      <div>
-                        <p className="text-sm text-gray-600">Final Outcome</p>
-                        <p className="text-sm font-medium text-gray-900">
-                          Final price: ${policy.finalPrice?.toLocaleString()} →
-                          {policy.finalPrice > policy.purchasePrice
-                            ? ` Seller receives $${(
-                                (policy.purchasePrice * policy.amount * policy.immediatePayout) / 100 +
-                                  ((policy.finalPrice - policy.purchasePrice) * policy.amount * policy.upsideShare) /
-                                    100
-                              ).toLocaleString()}`
-                            : ` Seller receives $${((policy.purchasePrice * policy.amount * policy.immediatePayout) / 100).toLocaleString()}`}
-                        </p>
-                      </div>
-                    ) : (
-                      <div>
-                        <p className="text-sm text-gray-600">Current Performance</p>
-                        <p className="text-sm font-medium text-gray-900">
-                          Current price: ${policy.currentPrice?.toLocaleString()} → If ended now: $$
-                          {(
-                            (policy.purchasePrice * policy.amount * policy.immediatePayout) / 100 +
-                            Math.max(
-                              0,
-                              ((policy.currentPrice - policy.purchasePrice) * policy.amount * policy.upsideShare) / 100,
-                            )
-                          ).toLocaleString()}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {policy.status === "Open" && (
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700">Buy Policy</Button>
-                )}
               </div>
-            ))}
-          </div>
-
-          <div className="text-center mt-12">
-            <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50 bg-transparent">
-              View More Policies
-            </Button>
+            )}
           </div>
         </section>
       </div>
