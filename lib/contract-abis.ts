@@ -1096,11 +1096,6 @@ export const MOCK_WETH_ABI = [
       "inputs": [
         {
           "internalType": "address",
-          "name": "_policyStorage",
-          "type": "address"
-        },
-        {
-          "internalType": "address",
           "name": "_priceOracle",
           "type": "address"
         }
@@ -1111,11 +1106,6 @@ export const MOCK_WETH_ABI = [
     {
       "inputs": [],
       "name": "InvalidParameters",
-      "type": "error"
-    },
-    {
-      "inputs": [],
-      "name": "InvalidPolicyId",
       "type": "error"
     },
     {
@@ -1155,38 +1145,6 @@ export const MOCK_WETH_ABI = [
         }
       ],
       "name": "OwnershipTransferred",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
-          "internalType": "address",
-          "name": "account",
-          "type": "address"
-        }
-      ],
-      "name": "Paused",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": true,
-          "internalType": "address",
-          "name": "token",
-          "type": "address"
-        },
-        {
-          "indexed": false,
-          "internalType": "bool",
-          "name": "supported",
-          "type": "bool"
-        }
-      ],
-      "name": "PayoutTokenSupportUpdated",
       "type": "event"
     },
     {
@@ -1262,37 +1220,24 @@ export const MOCK_WETH_ABI = [
       "inputs": [
         {
           "indexed": true,
+          "internalType": "uint256",
+          "name": "policyId",
+          "type": "uint256"
+        },
+        {
+          "indexed": true,
           "internalType": "address",
-          "name": "token",
+          "name": "buyer",
           "type": "address"
         },
         {
-          "indexed": false,
-          "internalType": "string",
-          "name": "symbol",
-          "type": "string"
-        },
-        {
-          "indexed": false,
-          "internalType": "bool",
-          "name": "supported",
-          "type": "bool"
-        }
-      ],
-      "name": "TokenSupportUpdated",
-      "type": "event"
-    },
-    {
-      "anonymous": false,
-      "inputs": [
-        {
-          "indexed": false,
+          "indexed": true,
           "internalType": "address",
-          "name": "account",
+          "name": "seller",
           "type": "address"
         }
       ],
-      "name": "Unpaused",
+      "name": "PolicyPurchased",
       "type": "event"
     },
     {
@@ -1303,19 +1248,6 @@ export const MOCK_WETH_ABI = [
           "internalType": "uint16",
           "name": "",
           "type": "uint16"
-        }
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "PRICE_PRECISION",
-      "outputs": [
-        {
-          "internalType": "uint256",
-          "name": "",
-          "type": "uint256"
         }
       ],
       "stateMutability": "view",
@@ -1384,6 +1316,24 @@ export const MOCK_WETH_ABI = [
       "type": "function"
     },
     {
+      "inputs": [
+        {
+          "internalType": "contract IERC20",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "emergencyWithdraw",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "inputs": [],
       "name": "getOpenPolicyIds",
       "outputs": [
@@ -1391,6 +1341,92 @@ export const MOCK_WETH_ABI = [
           "internalType": "uint256[]",
           "name": "",
           "type": "uint256[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "policyId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getPolicy",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "seller",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "buyer",
+              "type": "address"
+            },
+            {
+              "internalType": "contract IERC20",
+              "name": "token",
+              "type": "address"
+            },
+            {
+              "internalType": "string",
+              "name": "tokenSymbol",
+              "type": "string"
+            },
+            {
+              "internalType": "uint256",
+              "name": "amount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "contract IERC20",
+              "name": "payoutToken",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "payoutAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "duration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint16",
+              "name": "upsideShareBps",
+              "type": "uint16"
+            },
+            {
+              "internalType": "uint256",
+              "name": "entryPrice",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "startTimestamp",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "expiryTimestamp",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint8",
+              "name": "state",
+              "type": "uint8"
+            }
+          ],
+          "internalType": "struct PrecisionPolicyManager.Policy",
+          "name": "",
+          "type": "tuple"
         }
       ],
       "stateMutability": "view",
@@ -1410,6 +1446,19 @@ export const MOCK_WETH_ABI = [
           "internalType": "uint256[]",
           "name": "",
           "type": "uint256[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "nextPolicyId",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
         }
       ],
       "stateMutability": "view",
@@ -1468,32 +1517,91 @@ export const MOCK_WETH_ABI = [
     },
     {
       "inputs": [],
-      "name": "pause",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "paused",
+      "name": "platformFeeBps",
       "outputs": [
         {
-          "internalType": "bool",
+          "internalType": "uint16",
           "name": "",
-          "type": "bool"
+          "type": "uint16"
         }
       ],
       "stateMutability": "view",
       "type": "function"
     },
     {
-      "inputs": [],
-      "name": "policyStorage",
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "name": "policies",
       "outputs": [
         {
-          "internalType": "contract IPolicyStorage",
-          "name": "",
+          "internalType": "address",
+          "name": "seller",
           "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "buyer",
+          "type": "address"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "internalType": "string",
+          "name": "tokenSymbol",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "contract IERC20",
+          "name": "payoutToken",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "payoutAmount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "duration",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint16",
+          "name": "upsideShareBps",
+          "type": "uint16"
+        },
+        {
+          "internalType": "uint256",
+          "name": "entryPrice",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "startTimestamp",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "expiryTimestamp",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint8",
+          "name": "state",
+          "type": "uint8"
         }
       ],
       "stateMutability": "view",
@@ -1546,6 +1654,19 @@ export const MOCK_WETH_ABI = [
         }
       ],
       "name": "setPayoutTokenSupport",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint16",
+          "name": "feeBps",
+          "type": "uint16"
+        }
+      ],
+      "name": "setPlatformFee",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -1639,13 +1760,6 @@ export const MOCK_WETH_ABI = [
         }
       ],
       "name": "transferOwnership",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "unpause",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
