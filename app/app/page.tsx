@@ -637,7 +637,7 @@ export default function AppPage() {
                   )}
                   {isConnected && (
                     <div className="space-y-1">
-                      <p className="text-sm text-gray-500">
+                      <p className="text-base text-gray-500">
                         Balance: {parseFloat(formattedBalance).toFixed(4)} {selectedToken}
                       </p>
                       {!hasEnoughBalance && isFormValid && (
@@ -664,7 +664,7 @@ export default function AppPage() {
                       step={1}
                       className="w-full [&_[data-radix-slider-track]]:bg-gray-200 [&_[data-radix-slider-range]]:bg-blue-600 [&_[data-radix-slider-thumb]]:bg-blue-600 [&_[data-radix-slider-thumb]]:border-blue-600 [&_[data-radix-slider-thumb]]:ring-0"
                     />
-                    <div className="flex justify-between text-xs text-gray-500 mt-2">
+                    <div className="flex justify-between text-base text-gray-500 mt-2">
                       <span>90%</span>
                       <span>98%</span>
                     </div>
@@ -683,7 +683,7 @@ export default function AppPage() {
                       step={1}
                       className="w-full [&_[data-radix-slider-track]]:bg-gray-200 [&_[data-radix-slider-range]]:bg-blue-600 [&_[data-radix-slider-thumb]]:bg-blue-600 [&_[data-radix-slider-thumb]]:border-blue-600 [&_[data-radix-slider-thumb]]:ring-0"
                     />
-                    <div className="flex justify-between text-xs text-gray-500 mt-2">
+                    <div className="flex justify-between text-base text-gray-500 mt-2">
                       <span>1 day</span>
                       <span>90 days</span>
                     </div>
@@ -702,7 +702,7 @@ export default function AppPage() {
                       step={1}
                       className="w-full [&_[data-radix-slider-track]]:bg-gray-200 [&_[data-radix-slider-range]]:bg-blue-600 [&_[data-radix-slider-thumb]]:bg-blue-600 [&_[data-radix-slider-thumb]]:border-blue-600 [&_[data-radix-slider-thumb]]:ring-0"
                     />
-                    <div className="flex justify-between text-xs text-gray-500 mt-2">
+                    <div className="flex justify-between text-base text-gray-500 mt-2">
                       <span>10%</span>
                       <span>50%</span>
                     </div>
@@ -716,7 +716,7 @@ export default function AppPage() {
                     <span className="text-gray-900 font-medium">USDC</span>
                   </div>
                   {isConnected && (
-                    <p className="text-sm text-gray-500 mt-2">
+                    <p className="text-base text-gray-500 mt-2">
                       USDC Balance: {parseFloat(formattedUsdcBalance).toFixed(2)}
                     </p>
                   )}

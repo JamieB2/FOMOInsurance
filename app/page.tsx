@@ -138,7 +138,7 @@ export default function LandingPage() {
               </div>
               {/* Caption */}
               <p className="text-base text-gray-600 text-center mt-6 max-w-lg mx-auto">
-                You think you've sold the top but the market has other plans. FOMO Insurance protects you when the
+                You think you've sold at the top but the market has other plans. FOMO Insurance protects you when the
                 market jumps right after you sell.
               </p>
             </div>
@@ -321,10 +321,10 @@ export default function LandingPage() {
 
           <Accordion type="single" collapsible className="space-y-4">
             <AccordionItem value="item-1" className="border border-gray-200 rounded-lg px-6">
-              <AccordionTrigger className="text-left font-semibold text-gray-900 hover:no-underline">
+              <AccordionTrigger className="text-left font-semibold text-gray-900 hover:no-underline text-lg">
                 What is FOMO Insurance?
               </AccordionTrigger>
-              <AccordionContent className="text-gray-600 leading-relaxed">
+              <AccordionContent className="text-[17px] text-gray-600 leading-relaxed">
                 FOMO Insurance is a decentralized protocol that allows you to sell your crypto holdings while
                 maintaining exposure to potential upside. It's designed to eliminate the fear of missing out by
                 providing structured optionality after you've taken profits.
@@ -332,20 +332,20 @@ export default function LandingPage() {
             </AccordionItem>
 
             <AccordionItem value="item-2" className="border border-gray-200 rounded-lg px-6">
-              <AccordionTrigger className="text-left font-semibold text-gray-900 hover:no-underline">
+              <AccordionTrigger className="text-left font-semibold text-gray-900 hover:no-underline text-lg">
                 What tokens are supported?
               </AccordionTrigger>
-              <AccordionContent className="text-gray-600 leading-relaxed">
+              <AccordionContent className="text-[17px] text-gray-600 leading-relaxed">
                 We currently support WETH and USDC on Etherlink testnet. Our supported token list is continuously
                 expanding based on liquidity and community demand.
               </AccordionContent>
             </AccordionItem>
 
             <AccordionItem value="item-3" className="border border-gray-200 rounded-lg px-6">
-              <AccordionTrigger className="text-left font-semibold text-gray-900 hover:no-underline">
+              <AccordionTrigger className="text-left font-semibold text-gray-900 hover:no-underline text-lg">
                 What happens at expiry?
               </AccordionTrigger>
-              <AccordionContent className="text-gray-600 leading-relaxed">
+              <AccordionContent className="text-[17px] text-gray-600 leading-relaxed">
                 At expiry, your policy automatically settles based on the token's performance. If the price increased,
                 you'll receive your share of the upside in addition to the initial payout you received when creating the
                 policy.
@@ -353,30 +353,30 @@ export default function LandingPage() {
             </AccordionItem>
 
             <AccordionItem value="item-4" className="border border-gray-200 rounded-lg px-6">
-              <AccordionTrigger className="text-left font-semibold text-gray-900 hover:no-underline">
+              <AccordionTrigger className="text-left font-semibold text-gray-900 hover:no-underline text-lg">
                 Can I cancel a policy after listing it?
               </AccordionTrigger>
-              <AccordionContent className="text-gray-600 leading-relaxed">
+              <AccordionContent className="text-[17px] text-gray-600 leading-relaxed">
                 Yes. Policies can be cancelled at any time before a buyer accepts. Once a buyer purchases the policy, it
                 becomes locked and cannot be cancelled.
               </AccordionContent>
             </AccordionItem>
 
             <AccordionItem value="item-5" className="border border-gray-200 rounded-lg px-6">
-              <AccordionTrigger className="text-left font-semibold text-gray-900 hover:no-underline">
+              <AccordionTrigger className="text-left font-semibold text-gray-900 hover:no-underline text-lg">
                 How is the upside share calculated?
               </AccordionTrigger>
-              <AccordionContent className="text-gray-600 leading-relaxed">
+              <AccordionContent className="text-[17px] text-gray-600 leading-relaxed">
                 The upside share is based on the token price at expiry compared to the price when the buyer purchased
                 the policy. Any gains are split according to the agreed upside share.
               </AccordionContent>
             </AccordionItem>
 
             <AccordionItem value="item-6" className="border border-gray-200 rounded-lg px-6">
-              <AccordionTrigger className="text-left font-semibold text-gray-900 hover:no-underline">
+              <AccordionTrigger className="text-left font-semibold text-gray-900 hover:no-underline text-lg">
                 What if the price doesn't go up?
               </AccordionTrigger>
-              <AccordionContent className="text-gray-600 leading-relaxed">
+              <AccordionContent className="text-[17px] text-gray-600 leading-relaxed">
                 If the market falls over the duration of the policy, you won't be eligible for any upside payment. You
                 keep the full initial payout. This means you successfully sold at a good time compared to if you had
                 HODL.
@@ -384,20 +384,20 @@ export default function LandingPage() {
             </AccordionItem>
 
             <AccordionItem value="item-7" className="border border-gray-200 rounded-lg px-6">
-              <AccordionTrigger className="text-left font-semibold text-gray-900 hover:no-underline">
+              <AccordionTrigger className="text-left font-semibold text-gray-900 hover:no-underline text-lg">
                 Is my crypto safe while it's locked?
               </AccordionTrigger>
-              <AccordionContent className="text-gray-600 leading-relaxed">
+              <AccordionContent className="text-[17px] text-gray-600 leading-relaxed">
                 Your crypto is securely locked in audited smart contracts on Etherlink. The contracts are immutable and
                 handle settlement automatically based on oracle price feeds.
               </AccordionContent>
             </AccordionItem>
 
             <AccordionItem value="item-8" className="border border-gray-200 rounded-lg px-6">
-              <AccordionTrigger className="text-left font-semibold text-gray-900 hover:no-underline">
+              <AccordionTrigger className="text-left font-semibold text-gray-900 hover:no-underline text-lg">
                 How do I get test tokens?
               </AccordionTrigger>
-              <AccordionContent className="text-gray-600 leading-relaxed">
+              <AccordionContent className="text-[17px] text-gray-600 leading-relaxed">
                 Visit our <Link href="/faucet" className="text-blue-600 hover:underline">faucet page</Link> to claim free 
                 WETH and USDC test tokens for the Etherlink testnet. You can claim once every 24 hours.
               </AccordionContent>

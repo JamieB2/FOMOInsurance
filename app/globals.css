@@ -6,6 +6,9 @@
   .text-balance {
     text-wrap: balance;
   }
+  .accordion-content {
+    @apply text-[17px];
+  }
 }
 
 @layer base {
@@ -87,4 +90,13 @@
   body {
     @apply bg-background text-foreground;
   }
+  p {
+    @apply text-base font-medium;
+    font-family: var(--font-barlow), sans-serif;
+  }
+}
+
+/* Global accordion content style */
+.accordion-content {
+  @apply text-base text-gray-600 leading-relaxed;
 }
