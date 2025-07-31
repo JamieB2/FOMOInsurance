@@ -1091,7 +1091,9 @@ export const MOCK_WETH_ABI = [
     }
   ] as const
   
-  export const POLICY_MANAGER_ABI = [
+
+  
+export const POLICY_MANAGER_ABI = [
     {
       "inputs": [
         {
@@ -1789,11 +1791,484 @@ export const MOCK_WETH_ABI = [
       "type": "function"
     }
   ] as const
+
+
+  //END
   
   export const FOMO_INSURANCE_ABI = [
     {
-      "inputs": [{"internalType": "uint256", "name": "policyId", "type": "uint256"}],
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_policyStorage",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_policyManager",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_settlementEngine",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_priceOracle",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_feeRecipient",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "policyId",
+          "type": "uint256"
+        }
+      ],
       "name": "getPolicyDetails",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "address",
+              "name": "seller",
+              "type": "address"
+            },
+            {
+              "internalType": "address",
+              "name": "buyer",
+              "type": "address"
+            },
+            {
+              "internalType": "contract IERC20",
+              "name": "token",
+              "type": "address"
+            },
+            {
+              "internalType": "string",
+              "name": "tokenSymbol",
+              "type": "string"
+            },
+            {
+              "internalType": "uint256",
+              "name": "amount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "contract IERC20",
+              "name": "payoutToken",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "payoutAmount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "duration",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint16",
+              "name": "upsideShareBps",
+              "type": "uint16"
+            },
+            {
+              "internalType": "uint256",
+              "name": "entryPrice",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "startTimestamp",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "expiryTimestamp",
+              "type": "uint256"
+            },
+            {
+              "internalType": "enum IPolicyStorage.PolicyState",
+              "name": "state",
+              "type": "uint8"
+            }
+          ],
+          "internalType": "struct IPolicyStorage.Policy",
+          "name": "policy",
+          "type": "tuple"
+        },
+        {
+          "internalType": "uint256",
+          "name": "currentPrice",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "timeRemaining",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "potentialSellerPayout",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "potentialBuyerPayout",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "canSettle",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getProtocolStats",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "totalOpenPolicies",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "totalPoliciesCreated",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "oracleHealthy",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "policyManager",
+      "outputs": [
+        {
+          "internalType": "contract IPolicyManager",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "policyStorage",
+      "outputs": [
+        {
+          "internalType": "contract IPolicyStorage",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "priceOracle",
+      "outputs": [
+        {
+          "internalType": "contract IPriceOracle",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "settlementEngine",
+      "outputs": [
+        {
+          "internalType": "contract ISettlementEngine",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ] as const
+  
+  export const SETTLEMENT_ENGINE_ABI = [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_policyStorage",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_priceOracle",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "policyId",
+          "type": "uint256"
+        }
+      ],
+      "name": "canSettle",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "policyId",
+          "type": "uint256"
+        }
+      ],
+      "name": "calculatePotentialPayouts",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "sellerPayout",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "buyerPayout",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "policyId",
+          "type": "uint256"
+        }
+      ],
+      "name": "settlePolicy",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ] as const
+  
+  // Add the FallbackPriceOracle ABI
+  export const FALLBACK_PRICE_ORACLE_ABI = [
+    {
+      "inputs": [],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "symbol",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "price",
+          "type": "uint256"
+        }
+      ],
+      "name": "PriceUpdated",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "symbol",
+          "type": "string"
+        }
+      ],
+      "name": "getPrice",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string[]",
+          "name": "symbols",
+          "type": "string[]"
+        }
+      ],
+      "name": "getPrices",
+      "outputs": [
+        {
+          "internalType": "uint256[]",
+          "name": "",
+          "type": "uint256[]"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "isHealthy",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "symbol",
+          "type": "string"
+        }
+      ],
+      "name": "isSymbolSupported",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "supported",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "",
+          "type": "string"
+        }
+      ],
+      "name": "prices",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "bool",
+          "name": "healthy",
+          "type": "bool"
+        }
+      ],
+      "name": "setHealthy",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "symbol",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "price",
+          "type": "uint256"
+        }
+      ],
+      "name": "setPrice",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ] as const
+
+
+  export const POLICY_STORAGE_ABI = [
+    {
+      "inputs": [{"internalType": "uint256", "name": "policyId", "type": "uint256"}],
+      "name": "getPolicy",
       "outputs": [
         {
           "components": [
@@ -1809,43 +2284,14 @@ export const MOCK_WETH_ABI = [
             {"internalType": "uint256", "name": "entryPrice", "type": "uint256"},
             {"internalType": "uint256", "name": "startTimestamp", "type": "uint256"},
             {"internalType": "uint256", "name": "expiryTimestamp", "type": "uint256"},
-            {"internalType": "enum IPolicyStorage.PolicyState", "name": "state", "type": "uint8"}
+            {"internalType": "uint8", "name": "state", "type": "uint8"}
           ],
           "internalType": "struct IPolicyStorage.Policy",
-          "name": "policy",
+          "name": "",
           "type": "tuple"
-        },
-        {"internalType": "uint256", "name": "currentPrice", "type": "uint256"},
-        {"internalType": "uint256", "name": "timeRemaining", "type": "uint256"},
-        {"internalType": "uint256", "name": "potentialSellerPayout", "type": "uint256"},
-        {"internalType": "uint256", "name": "potentialBuyerPayout", "type": "uint256"},
-        {"internalType": "bool", "name": "canSettle", "type": "bool"}
-      ],
-      "stateMutability": "view",
-      "type": "function"
-    },
-    {
-      "inputs": [],
-      "name": "getProtocolStats",
-      "outputs": [
-        {"internalType": "uint256", "name": "totalOpenPolicies", "type": "uint256"},
-        {"internalType": "uint256", "name": "totalPoliciesCreated", "type": "uint256"},
-        {"internalType": "bool", "name": "oracleHealthy", "type": "bool"}
+        }
       ],
       "stateMutability": "view",
       "type": "function"
     }
   ] as const
-  
-  export const SETTLEMENT_ENGINE_ABI = [
-    {
-      "inputs": [{"internalType": "uint256", "name": "policyId", "type": "uint256"}],
-      "name": "settlePolicy",
-      "outputs": [],
-      "stateMutability": "nonpayable",
-      "type": "function"
-    }
-    // Note: canSettle is not directly on this contract but is returned by FOMOInsurance.
-    // We only need the ABI for functions we call directly from the frontend.
-  ] as const
-  

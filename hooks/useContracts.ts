@@ -1,4 +1,4 @@
-// hooks/useContracts.ts
+// hooks/useContracts.ts - Updated for new contract architecture
 import { useReadContract, useWriteContract, useAccount } from 'wagmi'
 import { CONTRACT_ADDRESSES, etherlinkTestnet } from '@/lib/web3-config'
 import { 
@@ -154,7 +154,8 @@ export function useCreatePolicy() {
     upsideShareBps: number
   }) => {
     try {
-      const tokenDecimals = tokenSymbol === 'WETH' ? 18 : 6
+      // Use the correct decimals based on the actual token, not the symbol passed to oracle
+      const tokenDecimals = token === CONTRACT_ADDRESSES.MOCK_WETH ? 18 : 6
       const parsedAmount = parseUnits(amount, tokenDecimals)
 
       // Validation
@@ -433,23 +434,24 @@ export function parseTokenAmount(amount: string, token: 'WETH' | 'USDC'): bigint
   }
 }
 
-// Contract state validation helpers
+// Updated contract state validation helpers
 export function useContractValidation() {
-  const { address } = useAccount()
+    const { address } = useAccount()
+  
+    // Don't try to check paused() since your contract doesn't have it
+    // const { data: isPaused, error: pausedError } = useReadContract({
+    //   address: CONTRACT_ADDRESSES.POLICY_MANAGER,
+    //   abi: POLICY_MANAGER_ABI,
+    //   functionName: 'paused',
+    //   query: {
+    //     retry: 3,
+    //     retryDelay: 1000
+    //   }
+    // })
 
-  // Check if PolicyManager is paused
-  const { data: isPaused } = useReadContract({
-    address: CONTRACT_ADDRESSES.POLICY_MANAGER,
-    abi: POLICY_MANAGER_ABI,
-    functionName: 'paused',
-    query: {
-      retry: 3,
-      retryDelay: 1000
-    }
-  })
-
-  // Check token support
-  const { data: isWethSupported } = useReadContract({
+    
+  // Check token support - these should work
+  const { data: isWethSupported, error: wethError } = useReadContract({
     address: CONTRACT_ADDRESSES.POLICY_MANAGER,
     abi: POLICY_MANAGER_ABI,
     functionName: 'supportedTokens',
@@ -460,7 +462,7 @@ export function useContractValidation() {
     }
   })
 
-  const { data: isUsdcSupported } = useReadContract({
+  const { data: isUsdcSupported, error: usdcError } = useReadContract({
     address: CONTRACT_ADDRESSES.POLICY_MANAGER,
     abi: POLICY_MANAGER_ABI,
     functionName: 'supportedTokens',
@@ -471,7 +473,7 @@ export function useContractValidation() {
     }
   })
 
-  const { data: isUsdcPayoutSupported } = useReadContract({
+  const { data: isUsdcPayoutSupported, error: payoutError } = useReadContract({
     address: CONTRACT_ADDRESSES.POLICY_MANAGER,
     abi: POLICY_MANAGER_ABI,
     functionName: 'supportedPayoutTokens',
@@ -482,11 +484,29 @@ export function useContractValidation() {
     }
   })
 
+  // Log errors for debugging, but ignore pausedError since function doesn't exist
+  if (wethError) console.error('Error checking WETH support:', wethError)
+  if (usdcError) console.error('Error checking USDC support:', usdcError)
+  if (payoutError) console.error('Error checking USDC payout support:', payoutError)
+
+  // Since your contract doesn't have paused(), assume it's not paused
+  const isPaused = false // Your contract is always "not paused"
+
+  // Validation based only on token support (ignore paused status)
+  const isValid = isWethSupported === true && 
+                   isUsdcSupported === true && 
+                   isUsdcPayoutSupported === true
+
   return {
-    isPaused,
+    isPaused, // Always false since your contract doesn't have pause functionality
     isWethSupported,
     isUsdcSupported,
     isUsdcPayoutSupported,
-    isValid: !isPaused && isWethSupported && isUsdcSupported && isUsdcPayoutSupported
+    isValid,
+    // Additional debug info
+    hasErrors: !!(wethError || usdcError || payoutError),
+    isLoading: isWethSupported === undefined || 
+               isUsdcSupported === undefined || 
+               isUsdcPayoutSupported === undefined
   }
 }

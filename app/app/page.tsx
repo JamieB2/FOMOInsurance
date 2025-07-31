@@ -26,7 +26,7 @@ import {
   parseTokenAmount
 } from '@/hooks/useContracts'
 import { CONTRACT_ADDRESSES } from '@/lib/web3-config'
-import { MOCK_USDC_ABI, MOCK_WETH_ABI } from "@/lib/contract-abis"
+import { MOCK_USDC_ABI, MOCK_WETH_ABI, POLICY_MANAGER_ABI } from "@/lib/contract-abis"
 
 export default function AppPage() {
   // Wallet connection
@@ -399,22 +399,35 @@ export default function AppPage() {
     }
   }, [isConnected, isPaused, isContractValid])
 
-  // Enhanced Policy Component with error handling
+  // 🔥 FIXED PolicyCard component - now reads from PolicyManager directly
   const PolicyCard = ({ policyId }: { policyId: number }) => {
-    const { data: policyDetails, error: policyError } = usePolicyDetails(policyId)
+    // 🔥 FIX: Read directly from PolicyManager instead of PolicyStorage
+    const { data: policy, error: policyError } = useReadContract({
+      address: CONTRACT_ADDRESSES.POLICY_MANAGER,  // ← Changed from POLICY_STORAGE
+      abi: POLICY_MANAGER_ABI,                     // ← Changed from POLICY_STORAGE_ABI
+      functionName: 'getPolicy',
+      args: [BigInt(policyId)],
+      query: { 
+        retry: 3,
+        retryDelay: 1000
+      }
+    })
     
     if (policyError) {
+      console.error(`PolicyCard error for policy ${policyId}:`, policyError)
       return (
         <div className="bg-white border border-red-200 rounded-2xl p-6">
           <div className="text-center text-red-600">
             <AlertCircle className="w-8 h-8 mx-auto mb-2" />
             <p className="text-sm">Failed to load policy details</p>
+            <p className="text-xs text-gray-500">Policy ID: {policyId}</p>
+            <p className="text-xs text-gray-400">Error: {policyError.message}</p>
           </div>
         </div>
       )
     }
     
-    if (!policyDetails) {
+    if (!policy) {
       return (
         <div className="bg-white border border-gray-200 rounded-2xl p-6 animate-pulse">
           <div className="h-6 bg-gray-200 rounded mb-4"></div>
@@ -423,18 +436,16 @@ export default function AppPage() {
         </div>
       )
     }
-
-    const [policy, currentPrice, timeRemaining, potentialSellerPayout, potentialBuyerPayout, canSettle] = policyDetails
-
-    const tokenSymbol = policy.tokenSymbol
+  
+    const tokenSymbol = policy.tokenSymbol === 'ETH' ? 'WETH' : policy.tokenSymbol
     const tokenAmount = formatTokenAmount(policy.amount, tokenSymbol as 'WETH' | 'USDC')
     const payoutAmount = formatTokenAmount(policy.payoutAmount, 'USDC')
     const upsideSharePercent = Number(policy.upsideShareBps) / 100
     const durationDays = Number(policy.duration) / (24 * 60 * 60)
-
+  
     const stateNames = ['Open', 'Active', 'Settled', 'Cancelled']
     const stateName = stateNames[policy.state] || 'Unknown'
-
+  
     const handlePurchase = async () => {
       try {
         if (!isConnected) {
@@ -446,7 +457,7 @@ export default function AppPage() {
         console.error('Error initiating policy purchase:', error)
       }
     }
-
+  
     return (
       <div className="bg-white border border-gray-200 rounded-2xl p-6">
         <div className="flex justify-between items-start mb-4">
@@ -470,7 +481,7 @@ export default function AppPage() {
             {stateName}
           </span>
         </div>
-
+  
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div>
             <p className="text-sm text-gray-600">Immediate Payout</p>
@@ -483,21 +494,21 @@ export default function AppPage() {
             <p className="text-lg font-semibold text-gray-900">{durationDays} days</p>
           </div>
         </div>
-
+  
         <div className="mb-4">
           <p className="text-sm text-gray-600">Upside Share</p>
           <p className="text-lg font-semibold text-gray-900">{upsideSharePercent}%</p>
         </div>
-
-        {stateName === "Active" && timeRemaining > 0 && (
+  
+        {stateName === "Active" && policy.expiryTimestamp > BigInt(Math.floor(Date.now() / 1000)) && (
           <div className="mb-4 p-3 bg-gray-50 rounded-lg">
             <p className="text-sm text-gray-600">Time Remaining</p>
             <p className="text-sm font-medium text-gray-900">
-              {Math.floor(Number(timeRemaining) / 86400)} days {Math.floor((Number(timeRemaining) % 86400) / 3600)} hours
+              {Math.floor(Number(policy.expiryTimestamp - BigInt(Math.floor(Date.now() / 1000))) / 86400)} days
             </p>
           </div>
         )}
-
+  
         {stateName === "Open" && (
           <Button 
             className="w-full bg-blue-600 hover:bg-blue-700"
@@ -785,27 +796,7 @@ export default function AppPage() {
                       </div>
                     </div>
 
-                    {/* Debug Info (only in development) */}
-                    {process.env.NODE_ENV === 'development' && (
-                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-xs">
-                        <h5 className="font-medium text-yellow-800 mb-2">Debug Info:</h5>
-                        <div className="space-y-1 text-yellow-700">
-                          <div>Connected: {isConnected ? 'Yes' : 'No'}</div>
-                          <div>Form Valid: {isFormValid ? 'Yes' : 'No'}</div>
-                          <div>Has Balance: {hasEnoughBalance ? 'Yes' : 'No'}</div>
-                          <div>Has Allowance: {hasEnoughAllowance ? 'Yes' : 'No'}</div>
-                          <div>Contract Valid: {isContractValid ? 'Yes' : 'No'}</div>
-                          <div>Contract Paused: {isPaused ? 'Yes' : 'No'}</div>
-                          <div>Current Allowance: {currentAllowance?.toString() || '0'}</div>
-                          <div>Amount Needed: {amountAsBigInt.toString()}</div>
-                          <div>Token Address: {CONTRACT_ADDRESSES[`MOCK_${selectedToken}`]}</div>
-                          <div>PolicyManager: {CONTRACT_ADDRESSES.POLICY_MANAGER}</div>
-                          <div>Is Approving: {isApproving ? 'Yes' : 'No'}</div>
-                          <div>Is Creating: {isCreating ? 'Yes' : 'No'}</div>
-                          <div>Waiting for Confirmation: {isWaitingForConfirmation ? 'Yes' : 'No'}</div>
-                        </div>
-                      </div>
-                    )}
+
 
                     {/* Enhanced Action Button */}
                     <div className="flex justify-end pt-4">
