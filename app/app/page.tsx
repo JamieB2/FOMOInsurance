@@ -50,6 +50,18 @@ export default function AppPage() {
   const [successMessage, setSuccessMessage] = useState("")
   const [isWaitingForConfirmation, setIsWaitingForConfirmation] = useState(false)
 
+  // Filter state
+  const [payoutRange, setPayoutRange] = useState([75, 98])
+  const [durationRange, setDurationRange] = useState([1, 90])
+  const [upsideRange, setUpsideRange] = useState([10, 50])
+  const [statusFilter, setStatusFilter] = useState({
+    open: true,
+    ongoing: true,
+    finished: false,
+  })
+  const [filteredPolicyIds, setFilteredPolicyIds] = useState<bigint[]>([])
+  const [filtersApplied, setFiltersApplied] = useState(false)
+
   // Contract hooks
   const { data: tokenBalance, refetch: refetchTokenBalance } = useFaucetBalance(selectedToken)
   const { data: usdcBalance, refetch: refetchUsdcBalance } = useFaucetBalance('USDC')
@@ -61,6 +73,29 @@ export default function AppPage() {
 
   // 🔥 NEW: USDC approval hook for purchasing policies
   const { approve: approveUsdc, isPending: isApprovingUsdc, isSuccess: isUsdcApprovalSuccess, error: usdcApprovalError } = useTokenApproval('USDC')
+
+  // 🔥 NEW: Apply filters function
+  const applyFilters = () => {
+    if (!openPolicyIds) {
+      setFilteredPolicyIds([])
+      return
+    }
+
+    const filtered = openPolicyIds.filter((policyId) => {
+      // We'll need to get the policy data to filter - this will be handled in the PolicyCard component
+      return true // For now, we'll filter in the display logic
+    })
+
+    setFilteredPolicyIds(filtered)
+    setFiltersApplied(true)
+  }
+
+  // Initialize filtered policies when openPolicyIds changes
+  useEffect(() => {
+    if (openPolicyIds && !filtersApplied) {
+      setFilteredPolicyIds(openPolicyIds)
+    }
+  }, [openPolicyIds, filtersApplied])
 
   // Contract validation
   const { isPaused, isWethSupported, isUsdcSupported, isUsdcPayoutSupported, isValid: isContractValid } = useContractValidation()
@@ -473,7 +508,7 @@ export default function AppPage() {
     }
   }, [isConnected, isPaused, isContractValid])
 
-  // 🔥 ENHANCED PolicyCard component with proper purchase logic
+  // 🔥 ENHANCED PolicyCard component with filtering logic
   const PolicyCard = ({ policyId }: { policyId: number }) => {
     const { data: policy, error: policyError, refetch: refetchPolicy } = useReadContract({
       address: CONTRACT_ADDRESSES.POLICY_MANAGER,
@@ -509,15 +544,45 @@ export default function AppPage() {
         </div>
       )
     }
-  
+
+    // 🔥 NEW: Apply filters to this policy
     const tokenSymbol = policy.tokenSymbol === 'ETH' ? 'WETH' : policy.tokenSymbol
     const tokenAmount = formatTokenAmount(policy.amount, tokenSymbol as 'WETH' | 'USDC')
     const payoutAmount = formatTokenAmount(policy.payoutAmount, 'USDC')
     const upsideSharePercent = Number(policy.upsideShareBps) / 100
     const durationDays = Number(policy.duration) / (24 * 60 * 60)
+    const payoutPercent = (Number(policy.payoutAmount) * 100) / (Number(policy.amount) * 1700) // Approximate payout percentage
   
     const stateNames = ['Open', 'Active', 'Settled', 'Cancelled']
     const stateName = stateNames[policy.state] || 'Unknown'
+
+    // 🔥 NEW: Filter logic - hide policy if it doesn't match filters
+    if (filtersApplied) {
+      // Check payout range (approximate since we don't have exact payout percentage)
+      if (payoutPercent < payoutRange[0] || payoutPercent > payoutRange[1]) {
+        return null
+      }
+      
+      // Check duration range
+      if (durationDays < durationRange[0] || durationDays > durationRange[1]) {
+        return null
+      }
+      
+      // Check upside share range
+      if (upsideSharePercent < upsideRange[0] || upsideSharePercent > upsideRange[1]) {
+        return null
+      }
+      
+      // Check status filter
+      const statusMatch = 
+        (statusFilter.open && stateName === 'Open') ||
+        (statusFilter.ongoing && stateName === 'Active') ||
+        (statusFilter.finished && (stateName === 'Settled' || stateName === 'Cancelled'))
+      
+      if (!statusMatch) {
+        return null
+      }
+    }
 
     // 🔥 ENHANCED: Check if buyer can afford the policy
     const payoutAmountBigInt = policy.payoutAmount
@@ -568,9 +633,6 @@ export default function AppPage() {
             <h3 className="text-2xl font-bold text-gray-900">
               {parseFloat(tokenAmount).toFixed(4)} {tokenSymbol}
             </h3>
-            <p className="text-sm text-gray-600">
-              ≈ ${(parseFloat(tokenAmount) * mockPrices[tokenSymbol as keyof typeof mockPrices]).toLocaleString()}
-            </p>
           </div>
           <span
             className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -594,7 +656,7 @@ export default function AppPage() {
           </div>
           <div>
             <p className="text-sm text-gray-600">Duration</p>
-            <p className="text-lg font-semibold text-gray-900">{durationDays} days</p>
+            <p className="text-lg font-semibold text-gray-900">{Math.round(durationDays)} days</p>
           </div>
         </div>
   
@@ -609,22 +671,6 @@ export default function AppPage() {
             <p className="text-sm font-medium text-gray-900">
               {Math.floor(Number(policy.expiryTimestamp - BigInt(Math.floor(Date.now() / 1000))) / 86400)} days
             </p>
-          </div>
-        )}
-
-        {/* 🔥 NEW: Show purchase requirements */}
-        {stateName === "Open" && policy.seller !== address && (
-          <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-            <p className="text-sm text-blue-800 font-medium">Purchase Requirements:</p>
-            <div className="text-xs text-blue-700 space-y-1 mt-1">
-              <div className={hasEnoughUsdcBalance ? "text-green-700" : "text-red-700"}>
-                {hasEnoughUsdcBalance ? "✅" : "❌"} USDC Balance: {parseFloat(formattedUsdcBalance).toFixed(2)} 
-                (need {parseFloat(payoutAmount).toFixed(2)})
-              </div>
-              <div className={hasEnoughUsdcAllowance ? "text-green-700" : "text-red-700"}>
-                {hasEnoughUsdcAllowance ? "✅" : "❌"} USDC Approval
-              </div>
-            </div>
           </div>
         )}
   
@@ -665,7 +711,7 @@ export default function AppPage() {
                     Purchasing...
                   </>
                 ) : (
-                  `Buy for $${parseFloat(payoutAmount).toFixed(2)}`
+                  `Buy for ${parseFloat(payoutAmount).toFixed(2)}`
                 )}
               </Button>
             )}
@@ -784,7 +830,6 @@ export default function AppPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="WETH">WETH</SelectItem>
-                        <SelectItem value="USDC">USDC</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -820,7 +865,7 @@ export default function AppPage() {
                       step={1}
                       className="w-full [&_[data-radix-slider-track]]:bg-gray-200 [&_[data-radix-slider-range]]:bg-blue-600 [&_[data-radix-slider-thumb]]:bg-blue-600 [&_[data-radix-slider-thumb]]:border-blue-600 [&_[data-radix-slider-thumb]]:ring-0"
                     />
-                    <div className="flex justify-between text-base text-gray-500 mt-2">
+                    <div className="flex justify-between text-xs text-gray-500 mt-2">
                       <span>90%</span>
                       <span>98%</span>
                     </div>
@@ -839,7 +884,7 @@ export default function AppPage() {
                       step={1}
                       className="w-full [&_[data-radix-slider-track]]:bg-gray-200 [&_[data-radix-slider-range]]:bg-blue-600 [&_[data-radix-slider-thumb]]:bg-blue-600 [&_[data-radix-slider-thumb]]:border-blue-600 [&_[data-radix-slider-thumb]]:ring-0"
                     />
-                    <div className="flex justify-between text-base text-gray-500 mt-2">
+                    <div className="flex justify-between text-xs text-gray-500 mt-2">
                       <span>1 day</span>
                       <span>90 days</span>
                     </div>
@@ -858,7 +903,7 @@ export default function AppPage() {
                       step={1}
                       className="w-full [&_[data-radix-slider-track]]:bg-gray-200 [&_[data-radix-slider-range]]:bg-blue-600 [&_[data-radix-slider-thumb]]:bg-blue-600 [&_[data-radix-slider-thumb]]:border-blue-600 [&_[data-radix-slider-thumb]]:ring-0"
                     />
-                    <div className="flex justify-between text-base text-gray-500 mt-2">
+                    <div className="flex justify-between text-xs text-gray-500 mt-2">
                       <span>10%</span>
                       <span>50%</span>
                     </div>
@@ -1014,6 +1059,96 @@ export default function AppPage() {
                 {Number(protocolStats[0])} open policies
               </div>
             )}
+          </div>
+
+          {/* Filters */}
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 mb-8">
+            <div className="grid lg:grid-cols-4 gap-8">
+              <div>
+                <Label className="text-sm font-medium text-gray-900 mb-4 block">Immediate Payout %</Label>
+                <Slider
+                  value={payoutRange}
+                  onValueChange={setPayoutRange}
+                  max={98}
+                  min={90}
+                  step={1}
+                  className="w-full [&_[data-radix-slider-track]]:bg-gray-200 [&_[data-radix-slider-range]]:bg-blue-600 [&_[data-radix-slider-thumb]]:bg-blue-600 [&_[data-radix-slider-thumb]]:border-blue-600"
+                />
+                <div className="flex justify-between text-xs text-gray-500 mt-2">
+                  <span>{payoutRange[0]}%</span>
+                  <span>{payoutRange[1]}%</span>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-gray-900 mb-4 block">Duration (days)</Label>
+                <Slider
+                  value={durationRange}
+                  onValueChange={setDurationRange}
+                  max={90}
+                  min={1}
+                  step={1}
+                  className="w-full [&_[data-radix-slider-track]]:bg-gray-200 [&_[data-radix-slider-range]]:bg-blue-600 [&_[data-radix-slider-thumb]]:bg-blue-600 [&_[data-radix-slider-thumb]]:border-blue-600"
+                />
+                <div className="flex justify-between text-xs text-gray-500 mt-2">
+                  <span>{durationRange[0]}</span>
+                  <span>{durationRange[1]}</span>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-gray-900 mb-4 block">Upside Share %</Label>
+                <Slider
+                  value={upsideRange}
+                  onValueChange={setUpsideRange}
+                  max={50}
+                  min={10}
+                  step={1}
+                  className="w-full [&_[data-radix-slider-track]]:bg-gray-200 [&_[data-radix-slider-range]]:bg-blue-600 [&_[data-radix-slider-thumb]]:bg-blue-600 [&_[data-radix-slider-thumb]]:border-blue-600"
+                />
+                <div className="flex justify-between text-xs text-gray-500 mt-2">
+                  <span>{upsideRange[0]}%</span>
+                  <span>{upsideRange[1]}%</span>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-gray-900 mb-4 block">Status</Label>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={statusFilter.open}
+                      onCheckedChange={(checked) => setStatusFilter((prev) => ({ ...prev, open: checked }))}
+                    />
+                    <span className="text-sm text-gray-700">Open</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={statusFilter.ongoing}
+                      onCheckedChange={(checked) => setStatusFilter((prev) => ({ ...prev, ongoing: checked }))}
+                    />
+                    <span className="text-sm text-gray-700">Ongoing</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={statusFilter.finished}
+                      onCheckedChange={(checked) => setStatusFilter((prev) => ({ ...prev, finished: checked }))}
+                    />
+                    <span className="text-sm text-gray-700">Finished</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Apply Filters Button */}
+            <div className="flex justify-center mt-6">
+              <Button 
+                onClick={applyFilters}
+                className="bg-blue-600 hover:bg-blue-700 px-8 py-2"
+              >
+                Apply Filters
+              </Button>
+            </div>
           </div>
 
           {/* Policy Grid */}
