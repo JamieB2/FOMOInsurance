@@ -52,12 +52,15 @@ export default function AppPage() {
 
   // Contract hooks
   const { data: tokenBalance, refetch: refetchTokenBalance } = useFaucetBalance(selectedToken)
-  const { data: usdcBalance } = useFaucetBalance('USDC')
+  const { data: usdcBalance, refetch: refetchUsdcBalance } = useFaucetBalance('USDC')
   const { createPolicy, isPending: isCreating, isSuccess: policyCreated, error: createError } = useCreatePolicy()
-  const { purchasePolicy, isPending: isPurchasing } = usePurchasePolicy()
+  const { purchasePolicy, isPending: isPurchasing, isSuccess: policyPurchased, error: purchaseError } = usePurchasePolicy()
   const { data: openPolicyIds, refetch: refetchOpenPolicies } = useOpenPolicies()
   const { data: protocolStats } = useProtocolStats()
   const { approve, isPending: isApproving, isSuccess: isApprovalSuccess, error: approvalError } = useTokenApproval(selectedToken)
+
+  // 🔥 NEW: USDC approval hook for purchasing policies
+  const { approve: approveUsdc, isPending: isApprovingUsdc, isSuccess: isUsdcApprovalSuccess, error: usdcApprovalError } = useTokenApproval('USDC')
 
   // Contract validation
   const { isPaused, isWethSupported, isUsdcSupported, isUsdcPayoutSupported, isValid: isContractValid } = useContractValidation()
@@ -66,6 +69,20 @@ export default function AppPage() {
   const { data: currentAllowance, refetch: refetchAllowance, error: allowanceError } = useReadContract({
     address: CONTRACT_ADDRESSES[`MOCK_${selectedToken}`],
     abi: selectedToken === 'WETH' ? MOCK_WETH_ABI : MOCK_USDC_ABI,
+    functionName: 'allowance',
+    args: address ? [address, CONTRACT_ADDRESSES.POLICY_MANAGER] : undefined,
+    query: { 
+      enabled: !!address,
+      refetchInterval: 3000,
+      retry: 3,
+      retryDelay: 1000
+    },
+  })
+
+  // 🔥 NEW: Read USDC allowance for policy purchases
+  const { data: usdcAllowance, refetch: refetchUsdcAllowance } = useReadContract({
+    address: CONTRACT_ADDRESSES.MOCK_USDC,
+    abi: MOCK_USDC_ABI,
     functionName: 'allowance',
     args: address ? [address, CONTRACT_ADDRESSES.POLICY_MANAGER] : undefined,
     query: { 
@@ -327,6 +344,21 @@ export default function AppPage() {
     }
   }, [isApprovalSuccess, refetchAllowance, selectedToken])
 
+  // 🔥 NEW: USDC approval success handling
+  useEffect(() => {
+    if (isUsdcApprovalSuccess) {
+      console.log('USDC approval transaction successful!')
+      setSuccessMessage('USDC approved successfully! You can now purchase policies.')
+      setShowSuccessAlert(true)
+      setTimeout(() => setShowSuccessAlert(false), 5000)
+      
+      // Refetch USDC allowance
+      setTimeout(() => {
+        refetchUsdcAllowance()
+      }, 3000)
+    }
+  }, [isUsdcApprovalSuccess, refetchUsdcAllowance])
+
   // Enhanced policy creation success handling
   useEffect(() => {
     if (policyCreated) {
@@ -354,6 +386,28 @@ export default function AppPage() {
     }
   }, [policyCreated, refetchAllowance, refetchTokenBalance, refetchOpenPolicies])
 
+  // 🔥 NEW: Policy purchase success handling
+  useEffect(() => {
+    if (policyPurchased) {
+      console.log('Policy purchased successfully!')
+      
+      // Refetch data
+      Promise.all([
+        refetchUsdcBalance(),
+        refetchTokenBalance(),
+        refetchOpenPolicies(),
+        refetchUsdcAllowance()
+      ]).catch(error => {
+        console.error('Error refetching data after policy purchase:', error)
+      })
+      
+      // Show success message
+      setSuccessMessage('Policy purchased successfully! Check your balances and My Policies page.')
+      setShowSuccessAlert(true)
+      setTimeout(() => setShowSuccessAlert(false), 5000)
+    }
+  }, [policyPurchased, refetchUsdcBalance, refetchTokenBalance, refetchOpenPolicies, refetchUsdcAllowance])
+
   // Enhanced error handling
   useEffect(() => {
     if (createError) {
@@ -364,6 +418,16 @@ export default function AppPage() {
     }
   }, [createError])
 
+  // 🔥 NEW: Purchase error handling
+  useEffect(() => {
+    if (purchaseError) {
+      const errorMsg = getErrorMessage(purchaseError, 'Policy purchase')
+      console.error('Purchase error:', purchaseError)
+      setErrorMessage(errorMsg)
+      setShowErrorAlert(true)
+    }
+  }, [purchaseError])
+
   useEffect(() => {
     if (approvalError) {
       const errorMsg = getErrorMessage(approvalError, `${selectedToken} approval`)
@@ -372,6 +436,16 @@ export default function AppPage() {
       setShowErrorAlert(true)
     }
   }, [approvalError, selectedToken])
+
+  // 🔥 NEW: USDC approval error handling
+  useEffect(() => {
+    if (usdcApprovalError) {
+      const errorMsg = getErrorMessage(usdcApprovalError, 'USDC approval')
+      console.error('USDC approval error:', usdcApprovalError)
+      setErrorMessage(errorMsg)
+      setShowErrorAlert(true)
+    }
+  }, [usdcApprovalError])
 
   useEffect(() => {
     if (allowanceError) {
@@ -399,12 +473,11 @@ export default function AppPage() {
     }
   }, [isConnected, isPaused, isContractValid])
 
-  // 🔥 FIXED PolicyCard component - now reads from PolicyManager directly
+  // 🔥 ENHANCED PolicyCard component with proper purchase logic
   const PolicyCard = ({ policyId }: { policyId: number }) => {
-    // 🔥 FIX: Read directly from PolicyManager instead of PolicyStorage
-    const { data: policy, error: policyError } = useReadContract({
-      address: CONTRACT_ADDRESSES.POLICY_MANAGER,  // ← Changed from POLICY_STORAGE
-      abi: POLICY_MANAGER_ABI,                     // ← Changed from POLICY_STORAGE_ABI
+    const { data: policy, error: policyError, refetch: refetchPolicy } = useReadContract({
+      address: CONTRACT_ADDRESSES.POLICY_MANAGER,
+      abi: POLICY_MANAGER_ABI,
       functionName: 'getPolicy',
       args: [BigInt(policyId)],
       query: { 
@@ -445,6 +518,21 @@ export default function AppPage() {
   
     const stateNames = ['Open', 'Active', 'Settled', 'Cancelled']
     const stateName = stateNames[policy.state] || 'Unknown'
+
+    // 🔥 ENHANCED: Check if buyer can afford the policy
+    const payoutAmountBigInt = policy.payoutAmount
+    const hasEnoughUsdcBalance = usdcBalance ? usdcBalance >= payoutAmountBigInt : false
+    const hasEnoughUsdcAllowance = usdcAllowance ? usdcAllowance >= payoutAmountBigInt : false
+
+    // 🔥 NEW: Handle USDC approval for purchasing
+    const handleApproveUsdc = async () => {
+      try {
+        console.log('Approving USDC for policy purchase...')
+        approveUsdc(CONTRACT_ADDRESSES.POLICY_MANAGER, maxUint256)
+      } catch (error) {
+        console.error('Error approving USDC:', error)
+      }
+    }
   
     const handlePurchase = async () => {
       try {
@@ -452,6 +540,21 @@ export default function AppPage() {
           await connectWallet()
           return
         }
+
+        // 🔥 NEW: Pre-purchase validation
+        if (!hasEnoughUsdcBalance) {
+          setErrorMessage(`Insufficient USDC balance. You need ${parseFloat(payoutAmount).toFixed(2)} USDC but only have ${parseFloat(formattedUsdcBalance).toFixed(2)}`)
+          setShowErrorAlert(true)
+          return
+        }
+
+        if (!hasEnoughUsdcAllowance) {
+          setErrorMessage('Please approve USDC spending first')
+          setShowErrorAlert(true)
+          return
+        }
+
+        console.log(`Purchasing policy ${policyId}...`)
         purchasePolicy(policyId)
       } catch (error) {
         console.error('Error initiating policy purchase:', error)
@@ -508,24 +611,65 @@ export default function AppPage() {
             </p>
           </div>
         )}
+
+        {/* 🔥 NEW: Show purchase requirements */}
+        {stateName === "Open" && policy.seller !== address && (
+          <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+            <p className="text-sm text-blue-800 font-medium">Purchase Requirements:</p>
+            <div className="text-xs text-blue-700 space-y-1 mt-1">
+              <div className={hasEnoughUsdcBalance ? "text-green-700" : "text-red-700"}>
+                {hasEnoughUsdcBalance ? "✅" : "❌"} USDC Balance: {parseFloat(formattedUsdcBalance).toFixed(2)} 
+                (need {parseFloat(payoutAmount).toFixed(2)})
+              </div>
+              <div className={hasEnoughUsdcAllowance ? "text-green-700" : "text-red-700"}>
+                {hasEnoughUsdcAllowance ? "✅" : "❌"} USDC Approval
+              </div>
+            </div>
+          </div>
+        )}
   
         {stateName === "Open" && (
-          <Button 
-            className="w-full bg-blue-600 hover:bg-blue-700"
-            onClick={handlePurchase}
-            disabled={isPurchasing || policy.seller === address}
-          >
-            {isPurchasing ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Purchasing...
-              </>
-            ) : policy.seller === address ? (
-              'Your Policy'
+          <div className="space-y-2">
+            {policy.seller === address ? (
+              <Button disabled className="w-full bg-gray-400">
+                Your Policy
+              </Button>
+            ) : !hasEnoughUsdcBalance ? (
+              <Button disabled className="w-full bg-red-500 hover:bg-red-600">
+                Insufficient USDC Balance
+              </Button>
+            ) : !hasEnoughUsdcAllowance ? (
+              <Button 
+                className="w-full bg-yellow-500 hover:bg-yellow-600"
+                onClick={handleApproveUsdc}
+                disabled={isApprovingUsdc}
+              >
+                {isApprovingUsdc ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Approving USDC...
+                  </>
+                ) : (
+                  'Approve USDC First'
+                )}
+              </Button>
             ) : (
-              `Buy for $${parseFloat(payoutAmount).toFixed(2)}`
+              <Button 
+                className="w-full bg-blue-600 hover:bg-blue-700"
+                onClick={handlePurchase}
+                disabled={isPurchasing}
+              >
+                {isPurchasing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Purchasing...
+                  </>
+                ) : (
+                  `Buy for $${parseFloat(payoutAmount).toFixed(2)}`
+                )}
+              </Button>
             )}
-          </Button>
+          </div>
         )}
       </div>
     )
@@ -546,9 +690,10 @@ export default function AppPage() {
                 Faucet
               </Link>
               {isConnected ? (
-                <span className="text-sm text-gray-600">
-                  {address?.slice(0, 6)}...{address?.slice(-4)}
-                </span>
+                <div className="text-sm text-gray-600">
+                  <div>{address?.slice(0, 6)}...{address?.slice(-4)}</div>
+                  <div className="text-xs">USDC: {parseFloat(formattedUsdcBalance).toFixed(2)}</div>
+                </div>
               ) : (
                 <Button 
                   onClick={connectWallet}
@@ -795,8 +940,6 @@ export default function AppPage() {
                         </div>
                       </div>
                     </div>
-
-
 
                     {/* Enhanced Action Button */}
                     <div className="flex justify-end pt-4">
