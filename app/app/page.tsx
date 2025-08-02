@@ -211,7 +211,7 @@ export default function AppPage() {
   })
 
   // Mock price data
-  const mockPrices = { WETH: 1700, USDC: 1 }
+  const mockPrices = { WETH: 3395.99, USDC: 1 }
 
   // Enhanced form validation with detailed error messages
   const validateForm = () => {
