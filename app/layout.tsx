@@ -1,4 +1,3 @@
-// app/layout.tsx
 import type React from "react"
 import type { Metadata } from "next"
 import { Barlow_Semi_Condensed } from "next/font/google"

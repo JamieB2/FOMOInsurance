@@ -1,5 +1,3 @@
-
-
 import { useReadContract } from 'wagmi'
 import { CONTRACT_ADDRESSES } from '@/lib/web3-config'
 import { POLICY_MANAGER_ABI } from '@/lib/contract-abis'
