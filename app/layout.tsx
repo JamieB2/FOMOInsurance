@@ -14,9 +14,8 @@ const barlow = Barlow_Semi_Condensed({
 export const metadata: Metadata = {
   title: "FOMO Insurance - Cash out without missing out",
   description:
-    "Sell your crypto while keeping a share of the upside. Get liquidity now and peace of mind for what comes next.",
+    "Sell your crypto while keeping a share of the upside.",
   keywords: "DeFi, crypto insurance, FOMO, decentralized finance, crypto options",
-  generator: "v0.dev",
 }
 
 export default function RootLayout({

@@ -80,7 +80,7 @@ export default function AppPage() {
     error: approvalError,
   } = useTokenApproval(selectedToken)
 
-  // 🔥 NEW: USDC approval hook for purchasing policies
+  //   USDC approval hook for purchasing policies
   const {
     approve: approveUsdc,
     isPending: isApprovingUsdc,
@@ -88,7 +88,7 @@ export default function AppPage() {
     error: usdcApprovalError,
   } = useTokenApproval("USDC")
 
-  // 🔥 NEW: Competitive Score calculation
+  //   Competitive Score calculation
   const calculateCompetitiveScore = () => {
     const p = immediatePayout[0] / 100 // Convert percentage to decimal
     const u = upsideShare[0] / 100 // Convert percentage to decimal
@@ -108,13 +108,13 @@ export default function AppPage() {
     }
   }
 
-  // 🔥 NEW: Get score color and tooltip
+  //   Get score color and tooltip
   const getScoreDisplay = (score: number) => {
     if (score >=0 && score <= 3) {
       return {
         color: "text-red-600",
         bgColor: "bg-red-100",
-        tooltip: "Very unlikely to sell at these terms.",
+        tooltip: "Very uncompetitive. Very unlikely to sell at these terms.",
       }
     } else if (score > 3 && score < 4) {
       return {
@@ -126,7 +126,7 @@ export default function AppPage() {
       return {
         color: "text-green-600",
         bgColor: "bg-green-100",
-        tooltip: "Fair and balanced. This is the target zone.",
+        tooltip: "Fair and balanced policy.",
       }
     } else if (score >6 && score <= 7) {
       return {
@@ -138,7 +138,7 @@ export default function AppPage() {
       return {
         color: "text-red-600",
         bgColor: "bg-red-100",
-        tooltip: "Overly generous and the seller may be losing value.",
+        tooltip: "Overly generous. You will lose value with these terms.",
       }
     }
   }
@@ -146,7 +146,7 @@ export default function AppPage() {
   const competitiveScore = calculateCompetitiveScore()
   const scoreDisplay = getScoreDisplay(competitiveScore)
 
-  // 🔥 NEW: Apply filters function
+  //   Apply filters function
   const applyFilters = () => {
     if (!openPolicyIds) {
       setFilteredPolicyIds([])
@@ -196,7 +196,7 @@ export default function AppPage() {
     },
   })
 
-  // 🔥 NEW: Read USDC allowance for policy purchases
+  //   Read USDC allowance for policy purchases
   const { data: usdcAllowance, refetch: refetchUsdcAllowance } = useReadContract({
     address: CONTRACT_ADDRESSES.MOCK_USDC,
     abi: MOCK_USDC_ABI,
@@ -387,7 +387,7 @@ export default function AppPage() {
       setShowErrorAlert(false)
       setShowWarningAlert(false)
 
-      // 🔥 FIX: Use proper symbols for price oracle
+      //  FIX: Use proper symbols for price oracle
       const tokenSymbolForOracle = selectedToken === "WETH" ? "ETH" : "USDC"
 
       const policyParams = {
@@ -463,7 +463,7 @@ export default function AppPage() {
     }
   }, [isApprovalSuccess, refetchAllowance, selectedToken])
 
-  // 🔥 NEW: USDC approval success handling
+  //   USDC approval success handling
   useEffect(() => {
     if (isUsdcApprovalSuccess) {
       console.log("USDC approval transaction successful!")
@@ -501,7 +501,7 @@ export default function AppPage() {
     }
   }, [policyCreated, refetchAllowance, refetchTokenBalance, refetchOpenPolicies])
 
-  // 🔥 NEW: Policy purchase success handling
+  //   Policy purchase success handling
   useEffect(() => {
     if (policyPurchased) {
       console.log("Policy purchased successfully!")
@@ -530,7 +530,7 @@ export default function AppPage() {
     }
   }, [createError])
 
-  // 🔥 NEW: Purchase error handling
+  //   Purchase error handling
   useEffect(() => {
     if (purchaseError) {
       const errorMsg = getErrorMessage(purchaseError, "Policy purchase")
@@ -549,7 +549,7 @@ export default function AppPage() {
     }
   }, [approvalError, selectedToken])
 
-  // 🔥 NEW: USDC approval error handling
+  //   USDC approval error handling
   useEffect(() => {
     if (usdcApprovalError) {
       const errorMsg = getErrorMessage(usdcApprovalError, "USDC approval")
@@ -585,7 +585,7 @@ export default function AppPage() {
     }
   }, [isConnected, isPaused, isContractValid])
 
-  // 🔥 ENHANCED PolicyCard component with filtering logic
+  //  ENHANCED PolicyCard component with filtering logic
   const PolicyCard = ({ policyId }: { policyId: number }) => {
     const {
       data: policy,
@@ -626,7 +626,7 @@ export default function AppPage() {
       )
     }
 
-    // 🔥 NEW: Apply filters to this policy
+    //   Apply filters to this policy
     const tokenSymbol = policy.tokenSymbol === "ETH" ? "WETH" : policy.tokenSymbol
     const tokenAmount = formatTokenAmount(policy.amount, tokenSymbol as "WETH" | "USDC")
     const payoutAmount = formatTokenAmount(policy.payoutAmount, "USDC")
@@ -637,7 +637,7 @@ export default function AppPage() {
     const stateNames = ["Open", "Active", "Settled", "Cancelled"]
     const stateName = stateNames[policy.state] || "Unknown"
 
-    // 🔥 NEW: Filter logic - hide policy if it doesn't match filters
+    //   Filter logic - hide policy if it doesn't match filters
     if (filtersApplied) {
       // Check payout range (approximate since we don't have exact payout percentage)
       if (payoutPercent < payoutRange[0] || payoutPercent > payoutRange[1]) {
@@ -665,12 +665,12 @@ export default function AppPage() {
       }
     }
 
-    // 🔥 ENHANCED: Check if buyer can afford the policy
+    //  ENHANCED: Check if buyer can afford the policy
     const payoutAmountBigInt = policy.payoutAmount
     const hasEnoughUsdcBalance = usdcBalance ? usdcBalance >= payoutAmountBigInt : false
     const hasEnoughUsdcAllowance = usdcAllowance ? usdcAllowance >= payoutAmountBigInt : false
 
-    // 🔥 NEW: Handle USDC approval for purchasing
+    //   Handle USDC approval for purchasing
     const handleApproveUsdc = async () => {
       try {
         console.log("Approving USDC for policy purchase...")
@@ -687,7 +687,7 @@ export default function AppPage() {
           return
         }
 
-        // 🔥 NEW: Pre-purchase validation
+        //   Pre-purchase validation
         if (!hasEnoughUsdcBalance) {
           setErrorMessage(
             `Insufficient USDC balance. You need ${Number.parseFloat(payoutAmount).toFixed(2)} USDC but only have ${Number.parseFloat(formattedUsdcBalance).toFixed(2)}`,
@@ -1005,7 +1005,7 @@ export default function AppPage() {
                     <p className="text-sm text-gray-600">in USDC</p>
                   </div>
 
-                  {/* 🔥 NEW: Competitive Score */}
+                  {/*   Competitive Score */}
                   <div className="bg-white rounded-lg p-4 border border-gray-200 mb-6">
                     <div className="flex items-center justify-between">
                       <p className="text-sm text-gray-600">Competitive Score</p>
