@@ -118,13 +118,6 @@ FOMO Insurance is deployed on **Etherlink** and is a good fit due to:
 
 ---
 
-## How to Run (Testnet)
-
-1. Step 1  
-2. Step 2
-
----
-
 ## Team
 - **0xJam** – Discord: jamie23000  
 - **Patrick** – Discord: ppwoo  
